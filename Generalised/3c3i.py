@@ -1,35 +1,22 @@
 import random
 import numpy as np
+from Agents import Nation, Citizen
+import matplotlib.pyplot as plt
 
 global countries, industries, development_shock
 
-countries = ['USA','CHINA']
-count = [100, 1000]
-
-# 2 country 2 product case
-# industries = ['wine', 'cloth']
-# P0 = [1,1]
-# P1 = [1,1]
-
-
-# A0 = [0.5,2]
-# A1 = [0.2,0.05]
-
-
-# alpha0 =[0.5,0.5]
-# alpha1 =[0.5,0.5]
-
-# beta0 = [0.5,0.5]
-# beta1 = [0.5,0.5]
-                
-# 2 country 3 product case
+# 3 country 3 product case
+countries = ['USA','CHINA','INDIA']
+count = [100, 1000,500]
 industries = ['wine', 'cloth', 'wheat']
+
 P0 = [1,1,1]
 P1 = [1,1,1]
 P2 = [1,1,1]
 
 A0 = [0.5,2, 0.25]
-A1 = [0.2,0.05, 0.025]
+A1 = [0.2,0.05, 0.25]
+A2 = [0.1,0.4, 0.25]
 
 alpha0 = [0.5, 0.5, 0.5]
 alpha1 = [0.5, 0.5, 0.5]
@@ -59,18 +46,18 @@ resultsU = {}
 for c in countries:
     resultsU[c] = []
 
-USA_ = Nation(countries[0], count[0], industries, P0,  
+USA_ = Nation(countries[0], count[0], industries, countries, P0,  
               A0, alpha0, beta0)
-CHINA_ = Nation(countries[1], count[1], industries, P1,  
+CHINA_ = Nation(countries[1], count[1], industries,countries, P1,  
               A1, alpha1, beta1)
-INDIA_ = Nation(countries[2], count[2], industries, P2,  
-              A2, alpha2, beta1)
+INDIA_ = Nation(countries[2], count[2], industries,countries, P2,  
+              A2, alpha1, beta1)
 
 # Nations Dictionary container
 nationsdict={
     "USA":USA_,
     "CHINA":CHINA_,
-    # "INDIA":INDIA_,
+    "INDIA":INDIA_,
 }
 
             
@@ -88,13 +75,7 @@ for t in range(1000):
     partner_develops = False
     if t>500:
         tr=True
-    # if t>1000:
-    #      partner_develops = True
-    # if t>1500:
-    #     tr=False
-    # if t>2000:
-    #     tr=True
-            
+
     for c in countries:
         nationsdict[c].update(trade_volume = tv, trade=tr, nationsdict=nationsdict, capital_mobility = False, partner_develops = partner_develops)
         if t>=500:    
@@ -119,5 +100,6 @@ for c in countries:
     for k in range(len(variables), len(variables)+1):
         axs[k].plot(resultsU[c], label='{}-{}'.format(c,'utility'))
         axs[k].legend()
-
-
+        
+plt.suptitle('3 countries, 3 industries with A0={},\n A1={}, \n A2={}'.format(A0,A1,A2), fontsize=16)
+fig.savefig('plots/3C3I_3.png')

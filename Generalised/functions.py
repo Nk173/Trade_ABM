@@ -14,12 +14,11 @@ def demand_function(Y, P):
     return D
 
 # Define a Comparative Advantage function
+# Define the RCA
 def RCA(A,B):
-    R_a = np.zeros((len(A)))
-    R_b = np.zeros((len(A)))
-    Rab = np.divide(A,B)
-    id_a = np.argmax(Rab)
-    id_b = np.argmin(Rab)
-    R_a[id_a] = 1
-    R_b[id_b] = 1
-    return(R_a)
+    A = np.array(A)
+    B = np.array(B)
+    nA = A/A.sum()
+    nB = B/B.sum()
+    # print(nA,nB)
+    return((nA>=nB)*1)
