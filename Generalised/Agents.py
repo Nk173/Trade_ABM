@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import random
 from functions import demand_function, production_function, RCA
 import numpy as np
@@ -60,13 +61,11 @@ class Citizen:
 
 
 # Define the nation agent
-class Nation:
     '''
     Nation has aggregate labor, capital, demand, production. Wages are determined by the marginal returns to output, prices are change gradually based on demand and supply, and return on capital is given by the differences in revenue and labor costs of produce per unit capital.
     
     Under trade, supply changes due to volume of trade which is set based on prices and production of goods in both countries.
     '''
-    
     # Initialisations
 class Nation:
     def __init__(self, name, citizen_count, industries, countries,
@@ -192,7 +191,7 @@ class Nation:
         
         
         # Utility
-        self.national_utility = np.sqrt(UT)
+        self.national_utility = UT**(1/len(industries))
         
     def adjust_trade(self, otherNation, trade_volume): 
         countries = self.countries
@@ -211,7 +210,8 @@ class Nation:
         otherNation = random.sample(otherNation, len(otherNation))
         
         for trade_partner in otherNation:
-            R = RCA(self.A, trade_partner.A)
+            R = RCA(self.A, trade_partner.A, self.prices, trade_partner.prices, industries)
+            R1 = RCA(trade_partner.A, self.A, trade_partner.prices,self.prices, industries)
             
             # Check prices of Non-reference goods
             Q1 = np.zeros((len(industries)))
@@ -221,17 +221,19 @@ class Nation:
                    
             for i in range(len(industries)):
                 
-                if R[i] == 1:
+                if R[i] == 1 and R1[i]==0:
                     Q0[i] = self.supply[industries[i]]
                     p0[i] = self.prices[industries[i]]
                     Q1[i] = trade_partner.supply[industries[i]]
                     p1[i] = trade_partner.prices[industries[i]]
 
-                else: 
+                elif R[i]==0 and R1[i]==1: 
                     Q1[i] = self.supply[industries[i]]
                     p1[i] = self.prices[industries[i]]
                     Q0[i] = trade_partner.supply[industries[i]]
                     p0[i] = trade_partner.prices[industries[i]]
+                else:
+                    continue
                     
                 if i > 0:
                     if p0[i] > p1[i]:
@@ -247,11 +249,11 @@ class Nation:
                         else: 
                                 trade_volume[self.name][trade_partner.name] = Q1[0]
 
-                    if R[i]==1:
+                    if R[i]==1 and R1[i]==0:
                         # check if you have production to export
                             self.traded[industries[i]] =  self.traded[industries[i]]+ (-1*trade_volume[self.name][trade_partner.name]/self.prices[industries[i]])
                             self.traded[industries[0]] =  self.traded[industries[0]]+(trade_volume[self.name][trade_partner.name]/self.prices[industries[0]])
-                    else:
+                    elif R[i]==0 and R1[i]==1:
                             self.traded[industries[i]] = self.traded[industries[i]]+ (trade_volume[self.name][trade_partner.name] / trade_partner.prices[industries[i]])
                             self.traded[industries[0]] = self.traded[industries[0]]+(-1*trade_volume[self.name][trade_partner.name]/self.prices[industries[0]])
 
