@@ -2,6 +2,8 @@
 import random
 from functions import demand_function, production_function, RCA
 import numpy as np
+from typing import Dict, List
+
 # Define the citizen agent
 class Citizen:
     '''
@@ -109,15 +111,15 @@ class Nation:
             self.traded[industries[i]] = 0 
          
     
-    def update(self, trade_volume, trade = False, nationsdict=None, capital_mobility=False, partner_develops=False):
+    def update(self, nationsdict=None):
         countries = self.countries
         industries = self.industries
         for c in range(len(countries)):
             if self.name == countries[c]:
                 otherNation = [value for key, value in nationsdict.items() if key not in self.name]
-            if partner_develops:
-                if self.name==countries[1]:
-                    self.A = development_shock
+            # if partner_develops:
+            #     if self.name==countries[1]:
+            #         self.A = development_shock
                     
         # print(otherNation)
         
@@ -174,99 +176,44 @@ class Nation:
             
             self.supply[industries[i]] = self.production[industries[i]] 
         
-        
-        if trade==True:
+
+
+
+    def updatePricesAndConsume(self,country_export: Dict[str,float], trade = False):
+        industries = self.industries
+        ## compute the effect of trade...
+        if trade == True:
+            self.traded = country_export.copy()
+            self.resolve_trade(country_export)
             # self.trade_volume = trade_volume[self.nation]
-            self.adjust_trade(otherNation, trade_volume)
-                     
+
+
         # Prices (price of wine is set to 1 and is the reference good)
-        for i in range(1,len(industries)):
+        for i in range(1, len(industries)):
             if self.demand[industries[i]] > self.supply[industries[i]]:
-                self.prices[industries[i]] = self.prices[industries[i]] + (self.prices[industries[i]]*0.02) 
-            else: 
-                self.prices[industries[i]] = self.prices[industries[i]] - (self.prices[industries[i]]*0.02)   
-        
-        self.UT=1
+                self.prices[industries[i]] = self.prices[industries[i]] + (self.prices[industries[i]] * 0.02)
+            else:
+                self.prices[industries[i]] = self.prices[industries[i]] - (self.prices[industries[i]] * 0.02)
+
+        self.UT = 1
         for i in range(len(industries)):
             self.UT = self.UT * self.supply[industries[i]]
-        
+
         # Utility
-        self.UT = self.UT ** (1/float(len(industries)))
-        
-    def adjust_trade(self, otherNation, trade_volume): 
-        countries = self.countries
-        industries = self.industries
-        trade_volume = trade_volume
-        # Initialise supply and trade
-        self.supply = {}
-        self.traded = {}
-        
-        for i in industries:
-            self.supply[i] = self.production[i]
-            self.traded[i] = 0
-        
-        # For each trade partner
-        import random
-        otherNation = random.sample(otherNation, len(otherNation))
-        
-        for trade_partner in otherNation:
-            R = RCA(self.A, trade_partner.A, self.prices, trade_partner.prices, industries)
-            R1 = RCA(trade_partner.A, self.A, trade_partner.prices,self.prices, industries)
-            
-            # Check prices of Non-reference goods
-            Q1 = np.zeros((len(industries)))
-            Q0= np.zeros((len(industries)))
-            p0= np.zeros((len(industries)))
-            p1= np.zeros((len(industries)))
-                   
-            for i in range(len(industries)):
-                
-                if R[i] == 1 and R1[i]==0:
-                    Q0[i] = self.supply[industries[i]]
-                    p0[i] = self.prices[industries[i]]
-                    Q1[i] = trade_partner.supply[industries[i]]
-                    p1[i] = trade_partner.prices[industries[i]]
-
-                elif R[i]==0 and R1[i]==1: 
-                    Q1[i] = self.supply[industries[i]]
-                    p1[i] = self.prices[industries[i]]
-                    Q0[i] = trade_partner.supply[industries[i]]
-                    p0[i] = trade_partner.prices[industries[i]]
-                else:
-                    continue
-                    
-                if i > 0:
-                    if p0[i] > p1[i]:
-                        trade_volume[self.name][trade_partner.name] = trade_volume[self.name][trade_partner.name] - 0.5
-
-                    else:
-                        trade_volume[self.name][trade_partner.name] = trade_volume[self.name][trade_partner.name] + 0.5
+        self.UT = self.UT ** (1 / float(len(industries)))
 
 
-                    if (Q0[0] < trade_volume[self.name][trade_partner.name]) & (Q1[0]< trade_volume[self.name][trade_partner.name]):
-                        if (Q0[0] > Q1[0]):
-                                trade_volume[self.name][trade_partner.name] = Q0[0]
-                        else: 
-                                trade_volume[self.name][trade_partner.name] = Q1[0]
 
-                    if R[i]==1 and R1[i]==0:
-                        # check if you have production to export
-                            self.traded[industries[i]] =  self.traded[industries[i]]+ (-1*trade_volume[self.name][trade_partner.name]/self.prices[industries[i]])
-                            self.traded[industries[0]] =  self.traded[industries[0]]+(trade_volume[self.name][trade_partner.name]/self.prices[industries[0]])
-                    elif R[i]==0 and R1[i]==1:
-                            self.traded[industries[i]] = self.traded[industries[i]]+ (trade_volume[self.name][trade_partner.name] / trade_partner.prices[industries[i]])
-                            self.traded[industries[0]] = self.traded[industries[0]]+(-1*trade_volume[self.name][trade_partner.name]/self.prices[industries[0]])
 
-                    self.supply[industries[i]] = self.supply[industries[i]] + self.traded[industries[i]]
-                    self.supply[industries[0]] = self.supply[industries[0]] + self.traded[industries[0]]
-                
-                if self.supply[industries[i]]<=0:
-                        self.supply[industries[i]]= 0.0001
+    def resolve_trade(self,exported: Dict[str,float] ):
+        ## we receive the total amount traded per good and change the supply
+        for i in range(len( self.supply)):
+            ## change the supply!
+            self.supply[self.industries[i]] -= exported[self.industries[i]]
+            ## make sure we didn't fuck up
+            assert self.supply[self.industries[i]]>=0
 
-            trade_volume[trade_partner.name][self.name] = trade_volume[self.name][trade_partner.name]
-            self.trade_volume = trade_volume
-        
-        
+
                  
     def get_capital(self):
             return self.capital        

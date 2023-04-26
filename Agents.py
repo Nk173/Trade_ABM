@@ -154,7 +154,8 @@ class Nation:
         self.traded = {'wine': 0, 'cloth': 0} 
         self.trade_volume = 0
         
-    def update(self, trade_volume, trade = False, nationsdict=None, capital_mobility=False, partner_develops=False, dev_shock= [0,0]):
+    def update(self, trade_volume, trade = False, nationsdict=None, capital_mobility=False,
+               partner_develops=False, dev_shock= [0,0]):
         
         if self.name=='USA':
             otherNation=nationsdict['CHINA']

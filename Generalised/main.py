@@ -1,7 +1,10 @@
 # Initialisations
+from typing import Dict
+
+from Generalised.tradeutils import doAllTrades
 from init import countries, count, industries, P, A, alpha, beta
 from functions import production_function, demand_function, RCA
-from Agents import Nation, Citizen
+from Agents import Nation
 import random
 import numpy as np
 import matplotlib.pyplot as plt
@@ -52,11 +55,14 @@ for c in countries:
             resultsdict[c][v][i] = []
 
 # Trade Volume Dictionary
-tv={}
-for c in countries:
-    tv[c]={}
-    for n in countries:
-        tv[c][n]=0
+tv: Dict[str, Dict[str, Dict[str, float]]] = {}
+for i in industries:
+    tv[i] = {}
+    for c in countries:
+        tv[i][c]={}
+        for n in countries:
+            tv[i][c][n]=0.0
+
 
 # Utility Results Container
 resultsU = {}
@@ -70,9 +76,11 @@ for c in countries:
     for d in countries:
         R_all[c][d]=[]
 
-    
+
+
+
 # Time Evolution of the Model
-for t in range(1000):  
+for t in range(2000):
     # print('step',t)
     tr = False
     partner_develops = False
@@ -80,9 +88,14 @@ for t in range(1000):
         tr=True
 
     for c in countries:
-        nationsdict[c].update(trade_volume = tv, trade=tr, nationsdict=nationsdict, capital_mobility = False, partner_develops = partner_develops)
-        if t>=500:    
-            tv = nationsdict[c].get_trade_volume()
+        nationsdict[c].update(nationsdict=nationsdict)
+    if tr:
+        trades = doAllTrades(tv, industries, countries, nationsdict, "wine")
+        #tv = trades["trade_volume"] not needed, this is exported anyway...
+        net_exports=trades["net_exports"]
+    ## update trading....
+    for c in countries:
+        nationsdict[c].updatePricesAndConsume(trade=tr,country_export=net_exports[c] if tr else None)
 
         for v in range(len(variables)):
             for i in industries:
