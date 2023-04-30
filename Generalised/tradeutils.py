@@ -20,10 +20,30 @@ def resetAllMonetaryFlows(trade_volume: Dict[str, Dict[str, Dict[str, float]]],
     Returns:
     None
     """
+    ## you cannot trade more than what you make so we need to account for that
+    ## todo but there is a problem here: if you are exporting something to buy something else this can screw it up
     # Set all elements of trade_volume['money'] to zero for every possible country
+    # for countryA in countries:
+    #     for countryB in countries:
+    #         trade_volume[nominal_good][countryA][countryB] = 0.0
+
+
+    ## we will compute this multiplier to help us reduce trade below total production, if needed
+    net_exports: Dict[str, dict[str, float]] = compute_net_export(countries,industries,trade_volume)
+    export_adjustment: Dict[str, dict[str, float]] = {}
+    nominal_budget_left: Dict[str, float] = {}
+    for country in countries:
+        export_adjustment[country] = {}
+        for industry in industries:
+            if industry != nominal_good:
+                export_adjustment[country][industry] = min(1,nationsdict[country].production[industry]/net_exports[country][industry])
+            else:
+                nominal_budget_left[country] = nationsdict[country].production[nominal_good] - net_exports[country][nominal_good]
+
     for countryA in countries:
         for countryB in countries:
             trade_volume[nominal_good][countryA][countryB] = 0.0
+
 
     # Go through every industry and every country to country pairing
     for industry in industries:
@@ -31,13 +51,25 @@ def resetAllMonetaryFlows(trade_volume: Dict[str, Dict[str, Dict[str, float]]],
             continue
         for countryA in countries:
             for countryB in countries:
+                old_trade_volume = trade_volume[industry][countryA][countryB]
                 # if country A is exporting to country B
-                if trade_volume[industry][countryA][countryB] < 0.0:
+                if old_trade_volume < 0.0:
                     ## country B buys from country A at country A's values
+                    new_trade_volume = old_trade_volume * export_adjustment[countryA][industry]
                     trade_cost = -trade_volume[industry][countryA][countryB] * nationsdict[countryA].prices[industry]
+                    ## check if we break through the remaining budget for importer
+                    if(nominal_budget_left[countryB]<abs(trade_cost)):
+                        trade_cost = nominal_budget_left[countryB]
+                        new_trade_volume = -trade_cost / nationsdict[countryA].prices[industry]
+
+                    trade_volume[industry][countryA][countryB] = new_trade_volume
+                    trade_volume[industry][countryB][countryA] = -new_trade_volume
                     # record countryA importing money and countryB exporting it....
                     trade_volume[nominal_good][countryA][countryB] += trade_cost
                     trade_volume[nominal_good][countryB][countryA] -= trade_cost
+                    nominal_budget_left[countryA] +=trade_cost
+                    nominal_budget_left[countryB] -=trade_cost
+
 
 
 def doAllTrades(trade_volume: Dict[str, Dict[str, Dict[str, float]]],industries: List[str],countries: List[str],
@@ -60,10 +92,7 @@ def doAllTrades(trade_volume: Dict[str, Dict[str, Dict[str, float]]],industries:
                     pairings.append([countries[i], countries[j], industry]) # append the pairing to the list
 
     random.shuffle(pairings) # shuffle the list of pairings
-    ## now for each pair we need to know:
-    ## 1) how much they produce + trade in of good to trade
-    ## 2) how much they produce + trade in of "money" (wine or whatever)
-    ## 3) if they can trade...
+    ## trade
     for pairing in pairings:
         doOneTrade(trade_volume,nationsdict,
                    net_exports,
@@ -81,7 +110,7 @@ def doAllTrades(trade_volume: Dict[str, Dict[str, Dict[str, float]]],industries:
 def compute_net_export(
     countries: List[str],
     industries: List[str],
-    trades: List[List[float]],
+    trades: Dict[str, Dict[str, Dict[str, float]]],
 ) -> Dict[str, Dict[str, float]]:
   """Computes net-export for every country and for every industry.
 
@@ -128,20 +157,20 @@ def doOneTrade(trade_volume,
     difference = abs(one.prices[industry] - two.prices[industry])
     percentage_difference = (difference / one.prices[industry]) * 100
 
-    if difference < 0.01 or percentage_difference < 1:
+    if difference < 0.01 or percentage_difference < 5:
         return
     ## okay, now let's find who is going to export to who...
 
-    if  one.prices[industry]<two.prices[industry]:
+    if  one.prices[industry] < two.prices[industry]:
         exporterName = countryOne; exporter = one; importerName = countryTwo; importer = two;
     else:
         exporterName = countryTwo; exporter = two; importerName = countryOne; importer = one;
 
     ##country one: how much do they hold of the item in the tradeable industry vs the nominal good (money)
-    inventory_exporter = exporter.supply[industry] - net_exports[exporterName][industry]
+    inventory_exporter = exporter.production[industry] - net_exports[exporterName][industry]
 
     ##country two: how much do they hold of the item in the tradeable industry vs the nominal good (money)
-    money_importer = importer.supply[nominal_good] - net_exports[importerName][nominal_good]
+    money_importer = importer.production[nominal_good] - net_exports[importerName][nominal_good]
 
 
     ## let's assume we really just want to move 0.5 items from one country to another...
@@ -161,3 +190,30 @@ def doOneTrade(trade_volume,
         net_exports[exporterName][industry] += target_trade_change
         net_exports[importerName][nominal_good] += money_exchanged
         net_exports[exporterName][nominal_good] -= money_exchanged
+
+
+# PI Controller class
+class PIController:
+    def __init__(self, c_setpoint, Kp, Ki):
+        self.c_setpoint = c_setpoint
+        self.Kp = Kp
+        self.Ki = Ki
+        self.integral_sum = 0
+
+    def control(self, a, b):
+        # Calculate the error
+        error = self.c_setpoint - (a / b)
+
+        # Calculate the proportional term
+        proportional = self.Kp * error
+
+        # Calculate the integral term
+        self.integral_sum += self.Ki * error
+
+        # Calculate the control signal
+        control_signal = proportional + self.integral_sum
+
+        # Adjust the value of 'c' based on the control signal
+        c = control_signal
+
+        return c

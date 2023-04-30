@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import math
 import random
 from functions import demand_function, production_function, RCA
 import numpy as np
@@ -92,6 +93,7 @@ class Nation:
         self.traded = {} 
         self.trade_volume={}
         self.UT = 1
+        self.mrs = {}
         for c in countries:
             self.trade_volume[c] = {}
             for n in countries:
@@ -188,22 +190,50 @@ class Nation:
             # self.trade_volume = trade_volume[self.nation]
 
 
+        consumption_hypothetical = self.supply.copy()
+        self.UT = self.utilityFunction(self.supply)
+        consumption_hypothetical['wine']+=1
+        marginal_utility_wine = self.utilityFunction(consumption_hypothetical)-self.UT
+        consumption_hypothetical['wine']-=1
+        self.mrs["wine"] = 1
+        import math
+
         # Prices (price of wine is set to 1 and is the reference good)
         for i in range(1, len(industries)):
-            if self.demand[industries[i]] > self.supply[industries[i]]:
-                self.prices[industries[i]] = self.prices[industries[i]] + (self.prices[industries[i]] * 0.02)
-            else:
-                self.prices[industries[i]] = self.prices[industries[i]] - (self.prices[industries[i]] * 0.02)
+            industry = industries[i]
+            consumption_hypothetical[industry]+=1
+            marginal_utility = self.utilityFunction(consumption_hypothetical) - self.UT
+            consumption_hypothetical[industry] -= 1
+            self.mrs[industry] = marginal_utility/marginal_utility_wine
+            # error = self.mrs[industry] - self.prices[industry]
+            # assert not math.isnan(error)
+            # self.prices[industry] += error*0.00001
 
-        self.UT = 1
-        for i in range(len(industries)):
-            self.UT = self.UT * self.supply[industries[i]]
+            # if math.isfinite(self.mrs[industry]):
+            #     self.prices[industry] = self.prices[industry] + 0.001*(self.mrs[industry] - self.prices[industry])
+            #     assert not math.isnan(self.prices[industry])
+            error = abs(self.mrs[industry]-self.prices[industry])
+            if  self.mrs[industry] > 1.05 * self.prices[industry]:
+                self.prices[industry] = self.prices[industry] + (self.prices[industry] * min(0.02,0.1*error))
+            elif self.mrs[industry] < .95 * self.prices[industry]:
+                self.prices[industry] = self.prices[industry] - (self.prices[industry] * min(0.02,0.1*error))
 
+        # for i in range(1, len(industries)):
+        #     if  self.demand[industries[i]] > self.supply[industries[i]]:
+        #         self.prices[industries[i]] = self.prices[industries[i]] + (self.prices[industries[i]] * 0.02)
+        #     elif self.demand[industries[i]] < self.supply[industries[i]]:
+        #         self.prices[industries[i]] = self.prices[industries[i]] - (self.prices[industries[i]] * 0.02)
+
+
+
+
+    def utilityFunction(self, consumption: Dict[str,float]):
+        UT = 1
+        for i in range(len(self.industries)):
+            UT = UT * consumption[self.industries[i]]
         # Utility
-        self.UT = self.UT ** (1 / float(len(industries)))
-
-
-
+        UT = UT ** (1 / float(len(self.industries)))
+        return UT
 
     def resolve_trade(self,exported: Dict[str,float] ):
         ## we receive the total amount traded per good and change the supply
@@ -211,7 +241,7 @@ class Nation:
             ## change the supply!
             self.supply[self.industries[i]] -= exported[self.industries[i]]
             ## make sure we didn't fuck up
-            assert self.supply[self.industries[i]]>=0
+            #assert self.supply[self.industries[i]]>=0
 
 
                  
@@ -247,3 +277,6 @@ class Nation:
     
     def get_trade_volume(self):
             return self.trade_volume
+
+    def get_MRS(self):
+            return self.mrs

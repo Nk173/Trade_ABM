@@ -12,9 +12,13 @@ import matplotlib.pyplot as plt
 
 global countries, industries, development_shock
 
+
+random.seed(0)
+
+
 ## 
-variables = ['production', 'demand', 'traded', 'labor', 'capital', 'wages', 'prices', 'ROI']
-functions = ['get_production', 'get_demand', 'get_traded', 'get_labor', 'get_capital', 'get_wages', 'get_prices', 'get_ROI']
+variables = ['production', 'demand', 'traded', 'labor', 'capital', 'wages', 'prices', 'ROI', 'MRS']
+functions = ['get_production', 'get_demand', 'get_traded', 'get_labor', 'get_capital', 'get_wages', 'get_prices', 'get_ROI','get_MRS']
 
 # ## Initialisations
 # countries = ['USA','CHINA']
@@ -80,11 +84,11 @@ for c in countries:
 
 
 # Time Evolution of the Model
-for t in range(2000):
+for t in range(5000):
     # print('step',t)
     tr = False
     partner_develops = False
-    if t>=500:
+    if t>=1000:
         tr=True
 
     for c in countries:
@@ -93,9 +97,18 @@ for t in range(2000):
         trades = doAllTrades(tv, industries, countries, nationsdict, "wine")
         #tv = trades["trade_volume"] not needed, this is exported anyway...
         net_exports=trades["net_exports"]
+        print("t is " + str(t))
+        print(net_exports)
+        print("USA")
+        print(nationsdict["USA"].production)
+        print(nationsdict["USA"].prices)
+        print("CHINA")
+        print(nationsdict["CHINA"].production)
+        print(nationsdict["CHINA"].prices)
     ## update trading....
     for c in countries:
         nationsdict[c].updatePricesAndConsume(trade=tr,country_export=net_exports[c] if tr else None)
+        print(nationsdict["CHINA"].supply)
 
         for v in range(len(variables)):
             for i in industries:
@@ -103,11 +116,13 @@ for t in range(2000):
         # print(nationsdict[c].get_utility)       
         resultsU[c].append(nationsdict[c].get_utility())
 
+
     
 ## Plotting results
 fig, axs = plt.subplots(5,2, figsize=(30, 30), facecolor='w', edgecolor='k')
 fig.subplots_adjust(hspace = .5, wspace=.1)
 axs = axs.ravel()
+
 
 for c in countries:
     for k in range(len(variables)):
@@ -122,4 +137,4 @@ for c in countries:
         axs[k].set_title('{}'.format('Utility'))
 
 plt.suptitle('Generalised', fontsize=16)
-fig.savefig('plots/2C2I_generalised.png')
+fig.savefig('plots/2C3I_generalised_2.png')
