@@ -1,4 +1,5 @@
 import random
+import sys
 from typing import Dict, List
 
 from Agents import Nation
@@ -36,7 +37,12 @@ def resetAllMonetaryFlows(trade_volume: Dict[str, Dict[str, Dict[str, float]]],
         export_adjustment[country] = {}
         for industry in industries:
             if industry != nominal_good:
-                export_adjustment[country][industry] = min(1,nationsdict[country].production[industry]/net_exports[country][industry])
+                export_adjustment[country][industry] = 1 if net_exports[country][industry] >0 else min(1,nationsdict[country].production[industry]/abs(net_exports[country][industry]))
+                if abs(export_adjustment[country][industry])>1:
+                    print(export_adjustment[country])
+                    print(nationsdict[country].production[industry])
+                    print(net_exports[country][industry])
+                    sys.exit(0)
             else:
                 nominal_budget_left[country] = nationsdict[country].production[nominal_good] - net_exports[country][nominal_good]
 
@@ -51,6 +57,8 @@ def resetAllMonetaryFlows(trade_volume: Dict[str, Dict[str, Dict[str, float]]],
             continue
         for countryA in countries:
             for countryB in countries:
+                if countryA == countryB:
+                    continue
                 old_trade_volume = trade_volume[industry][countryA][countryB]
                 # if country A is exporting to country B
                 if old_trade_volume < 0.0:
@@ -62,13 +70,27 @@ def resetAllMonetaryFlows(trade_volume: Dict[str, Dict[str, Dict[str, float]]],
                         trade_cost = nominal_budget_left[countryB]
                         new_trade_volume = -trade_cost / nationsdict[countryA].prices[industry]
 
+                    if abs(trade_cost) > 1000 or abs(new_trade_volume) > 1000:
+                        print(trade_cost)
+                        print(new_trade_volume)
+                        print(industry)
+                        print(countryA)
+                        print(countryB)
+                        print(nationsdict[countryA].prices[industry])
+                        print(old_trade_volume)
+                        print(export_adjustment[countryA][industry])
+                        print(nominal_budget_left[countryB])
+                        sys.exit(0)
+
                     trade_volume[industry][countryA][countryB] = new_trade_volume
                     trade_volume[industry][countryB][countryA] = -new_trade_volume
                     # record countryA importing money and countryB exporting it....
                     trade_volume[nominal_good][countryA][countryB] += trade_cost
                     trade_volume[nominal_good][countryB][countryA] -= trade_cost
-                    nominal_budget_left[countryA] +=trade_cost
-                    nominal_budget_left[countryB] -=trade_cost
+                    old_price = nationsdict[countryA].old_prices[industry]
+                    nominal_budget_left[countryA] += (trade_cost + old_trade_volume*old_price)
+                    nominal_budget_left[countryB] -= (trade_cost + old_trade_volume*old_price)
+
 
 
 

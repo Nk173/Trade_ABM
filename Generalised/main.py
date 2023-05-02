@@ -1,6 +1,7 @@
 # Initialisations
 from typing import Dict
 
+from Generalised.pricing import compute_price_immediate_marginal_utility, compute_price_marginal_utilities
 from Generalised.tradeutils import doAllTrades
 from init import countries, count, industries, P, A, alpha, beta
 from functions import production_function, demand_function, RCA
@@ -46,7 +47,8 @@ inst = {}
 nationsdict={}
 for c in range(len(countries)):
     inst[c] = Nation(countries[c], count[c], industries, countries, P[countries[c]],  
-              A[countries[c]], alpha[countries[c]], beta[countries[c]])
+              A[countries[c]], alpha[countries[c]], beta[countries[c]],
+                     pricing_algorithm=compute_price_marginal_utilities)
     nationsdict[countries[c]]=inst[c]
 
 # Results Container
@@ -98,17 +100,18 @@ for t in range(5000):
         #tv = trades["trade_volume"] not needed, this is exported anyway...
         net_exports=trades["net_exports"]
         print("t is " + str(t))
-        print(net_exports)
-        print("USA")
-        print(nationsdict["USA"].production)
-        print(nationsdict["USA"].prices)
-        print("CHINA")
-        print(nationsdict["CHINA"].production)
-        print(nationsdict["CHINA"].prices)
+        print(tv["wheat"]["USA"]["INDIA"])
+        # print(net_exports)
+        # print("USA")
+        # print(nationsdict["USA"].production)
+        # print(nationsdict["USA"].prices)
+        # print("CHINA")
+        # print(nationsdict["CHINA"].production)
+        # print(nationsdict["CHINA"].prices)
     ## update trading....
     for c in countries:
         nationsdict[c].updatePricesAndConsume(trade=tr,country_export=net_exports[c] if tr else None)
-        print(nationsdict["CHINA"].supply)
+        # print(nationsdict["CHINA"].supply)
 
         for v in range(len(variables)):
             for i in industries:
@@ -117,7 +120,10 @@ for t in range(5000):
         resultsU[c].append(nationsdict[c].get_utility())
 
 
-    
+print(nationsdict["USA"].production)
+print(nationsdict["CHINA"].production)
+print(nationsdict["INDIA"].production)
+
 ## Plotting results
 fig, axs = plt.subplots(5,2, figsize=(30, 30), facecolor='w', edgecolor='k')
 fig.subplots_adjust(hspace = .5, wspace=.1)

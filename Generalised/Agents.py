@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import math
 import random
+
+from Generalised.pricing import compute_price_marginal_utilities
 from functions import demand_function, production_function, RCA
 import numpy as np
 from typing import Dict, List
@@ -54,11 +56,13 @@ class Citizen:
         
         if random.random() < 0.004:
             j = np.argmax(W)
-            self.job = industries[j]
-            self.wage = W[j]
+            if W[j]>= self.wage * 1.05:
+                self.job = industries[j]
+                self.wage = W[j]
             r = np.argmax(R)
-            self.investment_choice = industries[r]
-            self.investment_income = R[r]
+            if R[r] >= self.investment_income * 1.05:
+                self.investment_choice = industries[r]
+                self.investment_income = R[r]
 
         self.income = self.wage + self.investment_income 
 
@@ -72,7 +76,8 @@ class Citizen:
     # Initialisations
 class Nation:
     def __init__(self, name, citizen_count, industries, countries,
-                 P, A, alpha, beta):
+                 P, A, alpha, beta,
+                 pricing_algorithm= compute_price_marginal_utilities):
         import numpy as np
         self.name = name
         self.industries = industries
@@ -90,10 +95,12 @@ class Nation:
         self.ROI = {}
         self.demand = {}
         self.prices = {}
+        self.old_prices = {}
         self.traded = {} 
         self.trade_volume={}
         self.UT = 1
         self.mrs = {}
+        self.pricing_algorithm = pricing_algorithm
         for c in countries:
             self.trade_volume[c] = {}
             for n in countries:
@@ -114,6 +121,7 @@ class Nation:
          
     
     def update(self, nationsdict=None):
+        self.old_prices = self.prices.copy()
         countries = self.countries
         industries = self.industries
         for c in range(len(countries)):
@@ -189,34 +197,7 @@ class Nation:
             self.resolve_trade(country_export)
             # self.trade_volume = trade_volume[self.nation]
 
-
-        consumption_hypothetical = self.supply.copy()
-        self.UT = self.utilityFunction(self.supply)
-        consumption_hypothetical['wine']+=1
-        marginal_utility_wine = self.utilityFunction(consumption_hypothetical)-self.UT
-        consumption_hypothetical['wine']-=1
-        self.mrs["wine"] = 1
-        import math
-
-        # Prices (price of wine is set to 1 and is the reference good)
-        for i in range(1, len(industries)):
-            industry = industries[i]
-            consumption_hypothetical[industry]+=1
-            marginal_utility = self.utilityFunction(consumption_hypothetical) - self.UT
-            consumption_hypothetical[industry] -= 1
-            self.mrs[industry] = marginal_utility/marginal_utility_wine
-            # error = self.mrs[industry] - self.prices[industry]
-            # assert not math.isnan(error)
-            # self.prices[industry] += error*0.00001
-
-            # if math.isfinite(self.mrs[industry]):
-            #     self.prices[industry] = self.prices[industry] + 0.001*(self.mrs[industry] - self.prices[industry])
-            #     assert not math.isnan(self.prices[industry])
-            error = abs(self.mrs[industry]-self.prices[industry])
-            if  self.mrs[industry] > 1.05 * self.prices[industry]:
-                self.prices[industry] = self.prices[industry] + (self.prices[industry] * min(0.02,0.1*error))
-            elif self.mrs[industry] < .95 * self.prices[industry]:
-                self.prices[industry] = self.prices[industry] - (self.prices[industry] * min(0.02,0.1*error))
+        self.pricing_algorithm(self)
 
         # for i in range(1, len(industries)):
         #     if  self.demand[industries[i]] > self.supply[industries[i]]:
