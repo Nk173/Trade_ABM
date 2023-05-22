@@ -18,9 +18,9 @@ def compute_price_marginal_utilities(country):
         country.mrs[industry] = marginal_utility / marginal_utility_wine
         error = abs(country.mrs[industry] - country.prices[industry])
         if country.mrs[industry] >  country.prices[industry]:
-            country.prices[industry] = country.prices[industry] + (country.prices[industry] * min(0.002, 0.001 * error))
+            country.prices[industry] = country.prices[industry] + (country.prices[industry] * min(0.02, 0.01 * error))
         elif country.mrs[industry] < country.prices[industry]:
-            country.prices[industry] = country.prices[industry] - (country.prices[industry] * min(0.002, 0.001 * error))
+            country.prices[industry] = country.prices[industry] - (country.prices[industry] * min(0.02, 0.01 * error))
 
 
 
@@ -45,5 +45,4 @@ def compute_price_immediate_marginal_utility(country):
             country.prices[industry] = country.mrs[industry]
         else:
             print("lame!")
-
 

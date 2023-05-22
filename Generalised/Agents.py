@@ -2,8 +2,8 @@
 import math
 import random
 
-from Generalised.pricing import compute_price_marginal_utilities
-from functions import demand_function, production_function, RCA
+from pricing import compute_price_marginal_utilities
+from functions import demand_function, production_function
 import numpy as np
 from typing import Dict, List
 
@@ -199,21 +199,18 @@ class Nation:
 
         self.pricing_algorithm(self)
 
-        # for i in range(1, len(industries)):
-        #     if  self.demand[industries[i]] > self.supply[industries[i]]:
-        #         self.prices[industries[i]] = self.prices[industries[i]] + (self.prices[industries[i]] * 0.02)
-        #     elif self.demand[industries[i]] < self.supply[industries[i]]:
-        #         self.prices[industries[i]] = self.prices[industries[i]] - (self.prices[industries[i]] * 0.02)
-
-
-
-
-    def utilityFunction(self, consumption: Dict[str,float]):
+    def utilityFunction(self, consumption: Dict[str,float], algorithm = 'geometric'):
         UT = 1
-        for i in range(len(self.industries)):
-            UT = UT * consumption[self.industries[i]]
-        # Utility
-        UT = UT ** (1 / float(len(self.industries)))
+        if algorithm =='geometric':
+            for i in range(len(self.industries)):
+                UT = UT * consumption[self.industries[i]]
+            # Utility
+            UT = UT ** (1 / float(len(self.industries)))
+        
+        # elif algorithm=='generalised cobbdouglas':
+        #     for i in range(len(self.industries)):
+                
+                  
         return UT
 
     def resolve_trade(self,exported: Dict[str,float] ):
