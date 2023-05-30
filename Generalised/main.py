@@ -1,7 +1,7 @@
 # Initialisations
 from typing import Dict
 
-from Generalised.pricing import compute_price_immediate_marginal_utility, compute_price_marginal_utilities
+from Generalised.pricing import compute_price_immediate_marginal_utility, compute_price_marginal_utilities, gd_pricing, demand_gap_pricing
 from Generalised.tradeutils import doAllTrades
 from init import countries, count, industries, P, A, alpha, beta
 from functions import production_function, demand_function, RCA
@@ -9,6 +9,10 @@ from Agents import Nation
 import random
 import numpy as np
 import matplotlib.pyplot as plt
+
+from pricing import gd_pricing
+from wages import wagesAsShareOfMarginalProduct, wageAsMarginalProductROIAsResidual, wageAsShareOfProduct
+
 # import pandas as pd
 
 global countries, industries, development_shock
@@ -18,7 +22,7 @@ random.seed(0)
 
 
 ## 
-variables = ['production', 'demand', 'traded', 'labor', 'capital', 'wages', 'prices', 'ROI', 'MRS']
+variables = ['production', 'demand', 'traded', 'labor', 'capital', 'wages', 'prices', 'ROI']
 functions = ['get_production', 'get_demand', 'get_traded', 'get_labor', 'get_capital', 'get_wages', 'get_prices', 'get_ROI','get_MRS']
 
 # ## Initialisations
@@ -48,7 +52,8 @@ nationsdict={}
 for c in range(len(countries)):
     inst[c] = Nation(countries[c], count[c], industries, countries, P[countries[c]],  
               A[countries[c]], alpha[countries[c]], beta[countries[c]],
-                     pricing_algorithm=compute_price_marginal_utilities)
+                     pricing_algorithm=demand_gap_pricing,
+                     wage_algorithm=wageAsMarginalProductROIAsResidual)
     nationsdict[countries[c]]=inst[c]
 
 # Results Container
@@ -86,7 +91,7 @@ for c in countries:
 
 
 # Time Evolution of the Model
-for t in range(5000):
+for t in range(2000):
     # print('step',t)
     tr = False
     partner_develops = False
@@ -100,7 +105,7 @@ for t in range(5000):
         #tv = trades["trade_volume"] not needed, this is exported anyway...
         net_exports=trades["net_exports"]
         print("t is " + str(t))
-        print(tv["wheat"]["USA"]["INDIA"])
+#        print(tv["wheat"]["USA"]["INDIA"])
         # print(net_exports)
         # print("USA")
         # print(nationsdict["USA"].production)
@@ -122,7 +127,7 @@ for t in range(5000):
 
 print(nationsdict["USA"].production)
 print(nationsdict["CHINA"].production)
-print(nationsdict["INDIA"].production)
+#print(nationsdict["INDIA"].production)
 
 ## Plotting results
 fig, axs = plt.subplots(5,2, figsize=(30, 30), facecolor='w', edgecolor='k')

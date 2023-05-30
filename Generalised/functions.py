@@ -9,7 +9,7 @@ def demand_function(Y, P):
     
     D = np.zeros((len(P)))
     for p in range(len(P)):
-        D[p] = Y / (2 * P[p])
+        D[p] = Y / (len(P) * P[p])
 
     return D
 
