@@ -129,12 +129,10 @@ class Citizen:
 class Nation:
     def __init__(self, name, citizen_count, industries, countries,
                  P, A, alpha, beta,
-                 pricing_algorithm= compute_price_marginal_utilities,
-                 utility_algorithm='geometric',
-                 wage_algorithm = wageAsShareOfProduct):
-        
+                 pricing_algorithm= compute_price_marginal_utilities):
         import numpy as np
         self.name = name
+        self.other_variables = {}
         self.industries = industries
         self.countries = countries
         self.citizens = [Citizen(self.name, industries, countries) for _ in range(citizen_count)]
@@ -145,10 +143,12 @@ class Nation:
         self.capital = {}
         self.production = {}
         self.supply = {}
+        self.old_supply = {}
         self.wage = {}
         self.wage_bill = {}
         self.ROI = {}
         self.demand = {}
+        self.old_demand = {}
         self.prices = {}
         self.old_prices = {}
         self.traded = {} 
@@ -196,6 +196,8 @@ class Nation:
         self.old_demand = self.demand.copy()
         self.old_supply = self.supply.copy()
 
+        self.old_demand = self.demand.copy()
+        self.old_supply = self.supply.copy()
         for i in range(len(industries)):
             self.labor[industries[i]] = 0
             self.capital[industries[i]] = 0
@@ -254,7 +256,7 @@ class Nation:
             self.ROI[industries[i]] = 0
             self.supply[industries[i]] = 0
             self.production[industries[i]] = 0
-            self.production[industries[i]] = production_function(self.A[i], self.alpha[industries[i]], 
+            self.production[industries[i]] = production_function(self.A[i], self.alpha[industries[i]],
                                                                  self.labor[industries[i]], self.beta[industries[i]], 
                                                                  self.capital[industries[i]])
             self.supply[industries[i]] = self.production[industries[i]] 
@@ -266,7 +268,11 @@ class Nation:
             self.wage_bill[industries[i]] = self.wage[industries[i]] * self.labor[industries[i]]
             self.ROI[industries[i]] = roi          
             
+            self.supply[industries[i]] = self.production[industries[i]] 
         
+
+
+
     def updatePricesAndConsume(self,country_export: Dict[str,float], trade = False):
         industries = self.industries
         ## compute the effect of trade...

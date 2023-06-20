@@ -16,20 +16,39 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
 
     random.seed(0)
 
-    ## 
-    variables = ['production', 'demand', 'traded', 'labor', 'capital', 'wages', 'prices', 'ROI', 'MRS']
-    functions = ['get_production', 'get_demand', 'get_traded', 'get_labor', 'get_capital', 'get_wages', 'get_prices', 'get_ROI','get_MRS']
+## 
+variables = ['production', 'demand', 'traded', 'labor', 'capital', 'wages', 'prices', 'ROI', 'MRS']
+functions = ['get_production', 'get_demand', 'get_traded', 'get_labor', 'get_capital', 'get_wages', 'get_prices', 'get_ROI','get_MRS']
 
-    ## 
-    inst = {}
-    nationsdict={}
-    for c in range(len(countries)):
-        inst[c] = Nation(countries[c], count[c], industries, countries, P[countries[c]],  
-                A[countries[c]], alpha[countries[c]], beta[countries[c]],
-                        pricing_algorithm=compute_price_marginal_utilities,
-                        wage_algorithm=wageAsMarginalProductROIAsResidual)
-        
-        nationsdict[countries[c]]=inst[c]
+# ## Initialisations
+# countries = ['USA','CHINA']
+# count = [100, 1000]
+# industries = ['wine','cloth']
+
+# P={}
+# P['USA'] = [1,1]
+# P['CHINA'] = [1,1]
+
+# A={}
+# A['USA']= [0.5, 2]
+# A['CHINA'] = [0.2, 0.05]
+
+# alpha={}
+# alpha['USA'] = [0.5,0.5]
+# alpha['CHINA'] = [0.5, 0.5]
+
+# beta={}
+# beta['USA'] = [0.5, 0.5]
+# beta['CHINA'] = [0.5, 0.5]
+
+## 
+inst = {}
+nationsdict={}
+for c in range(len(countries)):
+    inst[c] = Nation(countries[c], count[c], industries, countries, P[countries[c]],  
+              A[countries[c]], alpha[countries[c]], beta[countries[c]],
+                     pricing_algorithm=compute_price_marginal_utilities)
+    nationsdict[countries[c]]=inst[c]
 
     # Results Container
     resultsdict = {}
@@ -65,36 +84,43 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
 
 
 
-    # Time Evolution of the Model
-    for t in tqdm(range(5000)):
-        # print('step',t)
-        tr = False
-        partner_develops = False
-        if t>=6000:
-            tr=True
+# Time Evolution of the Model
+for t in range(5000):
+    # print('step',t)
+    tr = False
+    partner_develops = False
+    if t>=1000:
+        tr=True
 
-        for c in countries:
-            nationsdict[c].update(nationsdict=nationsdict)
-        if tr:
-            trades = doAllTrades(tv, industries, countries, nationsdict, "wine")
-            #tv = trades["trade_volume"] not needed, this is exported anyway...
-            net_exports=trades["net_exports"]
-            # print("t is " + str(t))
-            # print(tv["wheat"]["USA"]["INDIA"])
-
-        ## update trading....
-        for c in countries:
-            nationsdict[c].updatePricesAndConsume(trade=tr,country_export=net_exports[c] if tr else None)
+    for c in countries:
+        nationsdict[c].update(nationsdict=nationsdict)
+    if tr:
+        trades = doAllTrades(tv, industries, countries, nationsdict, "wine")
+        #tv = trades["trade_volume"] not needed, this is exported anyway...
+        net_exports=trades["net_exports"]
+        print("t is " + str(t))
+        print(tv["wheat"]["USA"]["INDIA"])
+        # print(net_exports)
+        # print("USA")
+        # print(nationsdict["USA"].production)
+        # print(nationsdict["USA"].prices)
+        # print("CHINA")
+        # print(nationsdict["CHINA"].production)
+        # print(nationsdict["CHINA"].prices)
+    ## update trading....
+    for c in countries:
+        nationsdict[c].updatePricesAndConsume(trade=tr,country_export=net_exports[c] if tr else None)
+        # print(nationsdict["CHINA"].supply)
 
             for v in range(len(variables)):
                 for i in industries:
                     resultsdict[c][variables[v]][i].append(getattr(nationsdict[c],functions[v])()[i])
             resultsU[c].append(nationsdict[c].get_utility())
 
-    exports = {}
-    for c in countries:
-        exports[c] = nationsdict[c].production
-        print(nationsdict[c].production)
+
+print(nationsdict["USA"].production)
+print(nationsdict["CHINA"].production)
+print(nationsdict["INDIA"].production)
 
     ## Plotting results
     fig, axs = plt.subplots(5,2, figsize=(30, 30), facecolor='w', edgecolor='k')

@@ -63,6 +63,7 @@ def compute_price_immediate_marginal_utility(country):
             print("lame!")
 
 
+import numpy as np
 
 def bandit_gradient_descent_learn(previous_loss: float,
                                   current_loss:float,
@@ -130,9 +131,3 @@ def gd_pricing(country):
         learning_rate = learning_rate * .98
 
 
-
-#
-# ### Hazan suggestion is to draw noise from spherical distribution
-def sample_spherical(ndim=3):
-    xi = np.random.normal(size=ndim)
-    return xi / np.linalg.norm(xi)
