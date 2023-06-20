@@ -11,9 +11,6 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
     import numpy as np
     import matplotlib.pyplot as plt 
 
-    from pricing import gd_pricing
-    from wages import wagesAsShareOfMarginalProduct, wageAsMarginalProductROIAsResidual, wageAsShareOfProduct
-
     random.seed(0)
 
     ## 
@@ -26,9 +23,7 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
     for c in range(len(countries)):
         inst[c] = Nation(countries[c], count[c], industries, countries, P[countries[c]],  
                 A[countries[c]], alpha[countries[c]], beta[countries[c]],
-                        pricing_algorithm=compute_price_marginal_utilities,
-                        wage_algorithm=wageAsMarginalProductROIAsResidual)
-        
+                        pricing_algorithm=compute_price_marginal_utilities)
         nationsdict[countries[c]]=inst[c]
 
     # Results Container
@@ -66,15 +61,25 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
 
 
     # Time Evolution of the Model
-    for t in tqdm(range(5000)):
+    for t in tqdm(range(3000)):
         # print('step',t)
         tr = False
         partner_develops = False
-        if t>=6000:
+        capital_mobility = False
+        if t>=4000:
             tr=True
-
+        # if t==2000:
+        #     if partner_develops:
+        #         for c in countries:
+        #             inst[c] = Nation(countries[c], count[c], industries, countries, P[countries[c]],  
+        #                              shock[countries[c]], alpha[countries[c]], beta[countries[c]],
+        #                              pricing_algorithm=compute_price_marginal_utilities)
+        #             nationsdict[countries[c]]=inst[c]
+        if t>=2000:
+            capital_mobility=True
         for c in countries:
-            nationsdict[c].update(nationsdict=nationsdict)
+            nationsdict[c].update(nationsdict=nationsdict, capital_mobility=capital_mobility)
+
         if tr:
             trades = doAllTrades(tv, industries, countries, nationsdict, "wine")
             #tv = trades["trade_volume"] not needed, this is exported anyway...
@@ -115,7 +120,7 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
             axs[k].set_title('{}'.format('Utility'))
 
     plt.suptitle('Generalised {}'.format(case), fontsize=16)
-    plt.savefig('Generalised/plots/{}_generalised_stable.png'.format(case))
+    plt.savefig('Generalised/plots/{}_generalised_capital_mobility.png'.format(case))
     return exports
 
 # Model--Run

@@ -6,6 +6,7 @@ from functions import demand_function, production_function
 from pricing import compute_price_marginal_utilities
 import numpy as np
 from typing import Dict, List
+from wages import wageAsShareOfProduct
 
 # Define the citizen agent
 class Citizen:
@@ -128,7 +129,10 @@ class Citizen:
 class Nation:
     def __init__(self, name, citizen_count, industries, countries,
                  P, A, alpha, beta,
-                 pricing_algorithm= compute_price_marginal_utilities,utility_algorithm='geometric'):
+                 pricing_algorithm= compute_price_marginal_utilities,
+                 utility_algorithm='geometric',
+                 wage_algorithm = wageAsShareOfProduct):
+        
         import numpy as np
         self.name = name
         self.industries = industries
@@ -153,6 +157,7 @@ class Nation:
         self.mrs = {}
         self.pricing_algorithm = pricing_algorithm
         self.utility_algorithm = utility_algorithm
+        self.wage_algorithm = wage_algorithm
         for c in countries:
             self.trade_volume[c] = {}
             for n in countries:
@@ -188,6 +193,9 @@ class Nation:
         P = np.zeros((len(industries)))
         L = np.zeros((len(industries)))
         K = np.zeros((len(industries)))
+        self.old_demand = self.demand.copy()
+        self.old_supply = self.supply.copy()
+
         for i in range(len(industries)):
             self.labor[industries[i]] = 0
             self.capital[industries[i]] = 0
@@ -249,19 +257,15 @@ class Nation:
             self.production[industries[i]] = production_function(self.A[i], self.alpha[industries[i]], 
                                                                  self.labor[industries[i]], self.beta[industries[i]], 
                                                                  self.capital[industries[i]])
-            inc_labor[industries[i]] = 0
-            inc_labor[industries[i]] = self.labor[industries[i]] + 1
-                     
-            inc_production[industries[i]] = production_function(self.A[i], self.alpha[industries[i]], 
-                                             inc_labor[industries[i]], self.beta[industries[i]], self.capital[industries[i]])
-            
-            self.wage[industries[i]] = self.prices[industries[i]] * (inc_production[industries[i]] - self.production[industries[i]])
-            # self.wage[industries[i]] = (self.prices[industries[i]] * self.production[industries[i]])/self.labor[industries[i]]
-            self.wage_bill[industries[i]] = self.wage[industries[i]] * self.labor[industries[i]]
-            
-            self.ROI[industries[i]] = ((self.prices[industries[i]] * self.production[industries[i]]) - self.wage_bill[industries[i]]) / self.capital[industries[i]]
-            
             self.supply[industries[i]] = self.production[industries[i]] 
+
+            # wage, roi = wageAsMarginalProductROIAsResidual(self,i,industries,production_function)
+            wage,roi = self.wage_algorithm(self,i,industries, production_function)
+
+            self.wage[industries[i]] = wage
+            self.wage_bill[industries[i]] = self.wage[industries[i]] * self.labor[industries[i]]
+            self.ROI[industries[i]] = roi          
+            
         
     def updatePricesAndConsume(self,country_export: Dict[str,float], trade = False):
         industries = self.industries
@@ -340,3 +344,11 @@ class Nation:
 
     def get_MRS(self):
             return self.mrs
+    
+    def compute_hypothetical_demand(self,P,industries):
+        demand = {}
+        for i in range(len(industries)):
+            demand[industries[i]] = 0
+            for citizen in self.citizens:
+                demand[industries[i]] += demand_function(citizen.income, P)[i]
+        return demand

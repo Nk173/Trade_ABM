@@ -1,7 +1,7 @@
 import random
 import sys
 from typing import Dict, List
-
+# from init dist
 from Agents import Nation
 
 
@@ -50,7 +50,6 @@ def resetAllMonetaryFlows(trade_volume: Dict[str, Dict[str, Dict[str, float]]],
         for countryB in countries:
             trade_volume[nominal_good][countryA][countryB] = 0.0
 
-
     # Go through every industry and every country to country pairing
     for industry in industries:
         if industry == nominal_good:
@@ -59,12 +58,18 @@ def resetAllMonetaryFlows(trade_volume: Dict[str, Dict[str, Dict[str, float]]],
             for countryB in countries:
                 if countryA == countryB:
                     continue
+                
                 old_trade_volume = trade_volume[industry][countryA][countryB]
                 # if country A is exporting to country B
+
                 if old_trade_volume < 0.0:
                     ## country B buys from country A at country A's values
                     new_trade_volume = old_trade_volume * export_adjustment[countryA][industry]
                     trade_cost = -trade_volume[industry][countryA][countryB] * nationsdict[countryA].prices[industry]
+
+                    ## Add Transportation costs to trade costs
+
+
                     ## check if we break through the remaining budget for importer
                     if(nominal_budget_left[countryB]<abs(trade_cost)):
                         trade_cost = nominal_budget_left[countryB]

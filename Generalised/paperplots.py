@@ -3,7 +3,7 @@ from typing import Dict
 from Agents import Nation
 import matplotlib.pyplot as plt
 
-from Generalised.tradeutils import doAllTrades
+from functions import doAllTrades
 
 plt.rcParams["figure.figsize"] = 20, 10
 
@@ -117,3 +117,4 @@ for iter,c in enumerate(countries):
                         label='{}-{}-{}'.format(c, variables[k], i))
             axs[k].legend()
 fig.savefig('samuelsonrun.png')
+
