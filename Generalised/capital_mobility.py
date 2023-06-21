@@ -1,7 +1,9 @@
 from init import case, countries, count, industries, P, A, alpha, beta, shock
 from tqdm import tqdm
 
-def gulden(case=case, countries=countries, count=count, industries=industries, P=P, A=A, alpha=alpha, beta=beta, partner_develops=False, shock=shock):
+def gulden(case=case, countries=countries, count=count, industries=industries, P=P, A=A, alpha=alpha, beta=beta, total_time = 3000, trade_time = 4000,
+        partner_develops=False, pd_time=10000, shock=shock, capital_mobility=False, cm_time=6000, autarky_time=5000):
+    
     from typing import Dict
     from pricing import compute_price_immediate_marginal_utility, compute_price_marginal_utilities
     from functions import production_function, demand_function
@@ -61,21 +63,27 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
 
 
     # Time Evolution of the Model
-    for t in tqdm(range(3000)):
-        # print('step',t)
+    for t in tqdm(range(total_time)):
+        # Markers
         tr = False
         partner_develops = False
         capital_mobility = False
-        if t>=4000:
+
+        if t>=trade_time:
             tr=True
-        # if t==2000:
-        #     if partner_develops:
-        #         for c in countries:
-        #             inst[c] = Nation(countries[c], count[c], industries, countries, P[countries[c]],  
-        #                              shock[countries[c]], alpha[countries[c]], beta[countries[c]],
-        #                              pricing_algorithm=compute_price_marginal_utilities)
-        #             nationsdict[countries[c]]=inst[c]
-        if t>=2000:
+
+        if t>=autarky_time:
+            tr=False
+
+        if t==pd_time:
+            if partner_develops:
+                for c in countries:
+                    inst[c] = Nation(countries[c], count[c], industries, countries, P[countries[c]],  
+                                     shock[countries[c]], alpha[countries[c]], beta[countries[c]],
+                                     pricing_algorithm=compute_price_marginal_utilities)
+                    nationsdict[countries[c]]=inst[c]
+
+        if t>=cm_time:
             capital_mobility=True
         for c in countries:
             nationsdict[c].update(nationsdict=nationsdict, capital_mobility=capital_mobility)
@@ -96,9 +104,9 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
                     resultsdict[c][variables[v]][i].append(getattr(nationsdict[c],functions[v])()[i])
             resultsU[c].append(nationsdict[c].get_utility())
 
-    exports = {}
+    production = {}
     for c in countries:
-        exports[c] = nationsdict[c].production
+        production[c] = nationsdict[c].production
         print(nationsdict[c].production)
 
     ## Plotting results
@@ -121,8 +129,8 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
 
     plt.suptitle('Generalised {}'.format(case), fontsize=16)
     plt.savefig('Generalised/plots/{}_generalised_capital_mobility.png'.format(case))
-    return exports
+    return production
 
 # Model--Run
-gulden()
+gulden(total_time=2000)
 

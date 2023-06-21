@@ -129,7 +129,9 @@ class Citizen:
 class Nation:
     def __init__(self, name, citizen_count, industries, countries,
                  P, A, alpha, beta,
-                 pricing_algorithm= compute_price_marginal_utilities):
+                 pricing_algorithm= compute_price_marginal_utilities, 
+                 utility_algorithm='geomtric',
+                 wage_algorithm=wageAsShareOfProduct):
         import numpy as np
         self.name = name
         self.other_variables = {}

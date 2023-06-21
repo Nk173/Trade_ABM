@@ -8,7 +8,6 @@ def compute_price_marginal_utilities(country, algorithm):
     
     # parameter values for ces calculations
     from init import weights, elasticities, sigma
-
     consumption_hypothetical = country.supply.copy()
     country.UT = country.utilityFunction(country.supply, algorithm=algorithm, weights=weights, elasticities=elasticities, sigma=sigma)
     consumption_hypothetical['wine'] += 1
