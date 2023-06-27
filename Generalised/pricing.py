@@ -1,36 +1,32 @@
-import numpy as np
-import random
-from functions import demand_function
-
-def compute_price_marginal_utilities(country, algorithm):
+def compute_price_marginal_utilities(country):
     
-    # set algorithm for utility function ('geometric' or 'ces')
-    
-    # parameter values for ces calculations
-    from init import weights, elasticities, sigma
     consumption_hypothetical = country.supply.copy()
-    country.UT = country.utilityFunction(country.supply, algorithm=algorithm, weights=weights, elasticities=elasticities, sigma=sigma)
-    consumption_hypothetical['wine'] += 1
-    marginal_utility_wine = country.utilityFunction(consumption_hypothetical, algorithm=algorithm, weights=weights, elasticities=elasticities, sigma=sigma) - country.UT
-    consumption_hypothetical['wine'] -= 1
-    country.mrs["wine"] = 1
+    country.UT = country.utilityFunction(country.supply)
+    consumption_hypothetical['wine'] += 1.0
+    marginal_utility_wine = country.utilityFunction(consumption_hypothetical) - country.UT
+    consumption_hypothetical['wine'] -= 1.0
+    country.mrs['wine'] = 1
     import math
 
     # Prices (price of wine is set to 1 and is the reference good)
     for i in range(1, len(country.industries)):
         industry = country.industries[i]
-        consumption_hypothetical[industry] += 1
-        marginal_utility = country.utilityFunction(consumption_hypothetical, algorithm=algorithm, weights=weights, elasticities=elasticities, sigma=sigma) - country.UT
-        consumption_hypothetical[industry] -= 1
+        country.mrs[industry] = 1
+        consumption_hypothetical[industry]+= 1.0
+        marginal_utility = country.utilityFunction(consumption_hypothetical) - country.UT
+
+        consumption_hypothetical[industry]-= 1.0
         country.mrs[industry] = marginal_utility / marginal_utility_wine
         error = abs(country.mrs[industry] - country.prices[industry])
         if country.mrs[industry] >  country.prices[industry]:
-            country.prices[industry] = country.prices[industry] + (country.prices[industry] * min(0.02, 0.01 * error))
+            country.prices[industry] = country.prices[industry] + (country.prices[industry] * min(0.02, error))
+
         elif country.mrs[industry] < country.prices[industry]:
-            country.prices[industry] = country.prices[industry] - (country.prices[industry] * min(0.02, 0.01 * error))
+            country.prices[industry] = country.prices[industry] - (country.prices[industry] * min(0.02, error))
 
 def demand_gap_pricing(country):
     # Prices (price of wine is set to 1 and is the reference good)
+    country.UT = country.utilityFunction(country.supply)
     industries = country.industries
     for i in range(1, len(industries)):
         if country.demand[industries[i]] > country.supply[industries[i]]:

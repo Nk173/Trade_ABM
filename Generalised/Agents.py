@@ -1,13 +1,4 @@
-# -*- coding: utf-8 -*-
-import math
-import random
-
-from functions import demand_function, production_function
-from pricing import compute_price_marginal_utilities
-import numpy as np
-from typing import Dict, List
-from wages import wageAsShareOfProduct
-
+# # -*- coding: utf-8 -*-
 # Define the citizen agent
 class Citizen:
     '''
@@ -19,7 +10,8 @@ class Citizen:
     
     '''
     # Initiatilisations
-    def __init__(self, nation, industries, countries):
+    def __init__(self, nation, industries, countries,d):
+        import random
         self.nation = nation
         self.income = 0
         self.wage = 0 
@@ -28,11 +20,14 @@ class Citizen:
         self.investment_choice = random.choice(industries)
         self.investment_country = self.nation
         self.investment_income = 0
+        self.foreign_income = 0
         self.industries = industries
-        self.countries=countries             
+        self.countries=countries
+        self.d = d             
     
-    def update(self, nationsdict, capital_mobility = False):
-        
+    def update(self, nationsdict, capital_mobility = False,repat_pct=0):
+        import random
+        import numpy as np
         industries = self.industries
         countries = self.countries
         for c in range(len(countries)):
@@ -46,19 +41,6 @@ class Citizen:
         W = np.zeros((len(industries)))
         R = np.zeros((len(industries)))
         P = np.zeros((len(industries)))
-
-
-        for i in range(len(industries)):
-            W[i] = wages[industries[i]]
-            R[i] = returns[industries[i]]
-            P[i] = prices[industries[i]]
-
-            if self.investment_choice == industries[i]:
-                self.investment_income = R[i]
-                    
-            if self.job == industries[i]:
-                self.wage = W[i]
-
 
         p_choice = 0.004
         if capital_mobility:
@@ -74,8 +56,10 @@ class Citizen:
                     returns[c][i] = nationsdict[c].get_ROI()[i]
                     if (self.investment_country==c) and (self.investment_choice==i):
                         self.investment_income = returns[c][i]
+                    
+            if (self.nation != self.investment_country):
+                    self.investment_income = self.investment_income * repat_pct
             
-
             if r<p_choice:
                 for i in range(len(industries)):
                 #     returns[self.nation][industries[i]] = nationsdict[self.nation].get_ROI()[industries[i]]
@@ -84,10 +68,13 @@ class Citizen:
                 #         if countries[c] != self.nation:
                 #             returns[countries[c]][industries[i]]=  nationsdict[countries[c]].get_ROI()[industries[i]]                        
                         # make the highest 
-                        if self.investment_income *1.02 <= returns[countries[c]][industries[i]]:
+                        if self.investment_income *(1+self.d) <= returns[countries[c]][industries[i]]:
                             self.investment_income = returns[countries[c]][industries[i]]
                             self.investment_country = countries[c]
                             self.investment_choice = industries[i]
+                        
+            if (self.nation != self.investment_country):
+                    self.investment_income = self.investment_income * repat_pct
                     
             
             for i in range(len(industries)):
@@ -97,7 +84,7 @@ class Citizen:
 
             if r<p_choice:
                 j = np.argmax(W)
-                if W[j]>= self.wage * 1.02:
+                if W[j]>= self.wage * (1+self.d):
                     self.job = industries[j]
                     self.wage = W[j]
 
@@ -105,14 +92,28 @@ class Citizen:
                 
 
         else: 
-            
-            if random.random() < p_choice:
+            for i in range(len(industries)):
+                W[i] = wages[industries[i]]
+                R[i] = returns[industries[i]]
+                P[i] = prices[industries[i]]
+
+            for i in range(len(industries)):
+                if self.investment_choice == industries[i]:
+                    self.investment_income = R[i]
+                            
+                if self.job == industries[i]:
+                    self.wage = W[i]
+
+            r0 = random.random()
+            if r0 < p_choice:
                 j = np.argmax(W)
-                if W[j]>= self.wage * 1.02:
+                if W[j] >= self.wage * (1.0+self.d):
+                # if W[j] >= self.wage * 1.00005:
                     self.job = industries[j]
                     self.wage = W[j]
+
                 r = np.argmax(R)
-                if R[r] >= self.investment_income * 1.02:
+                if R[r] >= self.investment_income * (1.0+self.d):
                     self.investment_choice = industries[r]
                     self.investment_income = R[r]
 
@@ -127,18 +128,21 @@ class Citizen:
     '''
     # Initialisations
 class Nation:
+    from typing import Dict
+    import numpy as np
     def __init__(self, name, citizen_count, industries, countries,
                  P, A, alpha, beta,
-                 pricing_algorithm= compute_price_marginal_utilities, 
-                 utility_algorithm='geomtric',
-                 wage_algorithm=wageAsShareOfProduct):
-        import numpy as np
+                 pricing_algorithm, 
+                 utility_algorithm,
+                 wage_algorithm,d):
+        
         self.name = name
         self.other_variables = {}
         self.industries = industries
         self.countries = countries
-        self.citizens = [Citizen(self.name, industries, countries) for _ in range(citizen_count)]
+        self.citizens = [Citizen(self.name, industries, countries,d=d) for _ in range(citizen_count)]
         self.A = A
+        self.d = d
         self.alpha = {}
         self.beta = {}
         self.labor = {}
@@ -176,10 +180,13 @@ class Nation:
             self.ROI[industries[i]] = 0
             self.demand[industries[i]] = 0
             self.prices[industries[i]] = P[i]
-            self.traded[industries[i]] = 0 
+            self.traded[industries[i]] = 0
+            self.mrs[industries[i]]=0 
          
     
     def update(self, nationsdict=None, capital_mobility=False):
+        import numpy as np
+        from functions import demand_function, production_function
         self.old_prices = self.prices.copy()
         countries = self.countries
         industries = self.industries
@@ -195,11 +202,10 @@ class Nation:
         P = np.zeros((len(industries)))
         L = np.zeros((len(industries)))
         K = np.zeros((len(industries)))
-        self.old_demand = self.demand.copy()
-        self.old_supply = self.supply.copy()
 
         self.old_demand = self.demand.copy()
         self.old_supply = self.supply.copy()
+
         for i in range(len(industries)):
             self.labor[industries[i]] = 0
             self.capital[industries[i]] = 0
@@ -207,27 +213,28 @@ class Nation:
             P[i] = self.prices[industries[i]]
         
         # No capital mobility
-        if ~capital_mobility:
+        if capital_mobility==False:
             for citizen in self.citizens:
-                citizen.update(nationsdict, capital_mobility = capital_mobility)
-                for i in range(len(industries)):
+                    citizen.update(nationsdict, capital_mobility = capital_mobility)
+                    for i in range(len(industries)):
                         if citizen.job == industries[i]:
-                            L[i]+=1
+                            L[i]=L[i]+1
+
                         if citizen.investment_choice == industries[i]:
-                            # K[i]+=citizen.investment_income
-                            K[i]+=1     
-            
-                self.demand[industries[i]] = self.demand[industries[i]] + demand_function(citizen.income, P)[i]
+                            K[i]=K[i]+1     
+                
+                        self.demand[industries[i]] = self.demand[industries[i]] + demand_function(citizen.income, P)[i]
 
 
         # w/ capital mobility
         else:
-            K = np.zeros((len(industries)))
-
              # calculate local capital
             for citizen in self.citizens:
                 citizen.update(nationsdict, capital_mobility = capital_mobility)
                 for j in range(len(industries)):
+                    if citizen.job == industries[j]:
+                        L[j]=L[j]+1
+
                     if (citizen.investment_choice == industries[j]) and (citizen.investment_country == self.name):
                         #   K[j]+=citizen.investment_income
                         K[j]=K[j]+1   
@@ -240,18 +247,18 @@ class Nation:
                         for j in range(len(industries)):
                             if citizen.investment_choice == industries[j]:
                                 # K[j]+=citizen.investment_income
-                                K[j]=K[j]+1   
+                                K[j]=K[j]+1
+                            self.demand[industries[j]] = self.demand[industries[j]] + demand_function(citizen.income, P)[j]   
         
 
         for i in range(len(industries)):
             self.labor[industries[i]] = L[i]
             self.capital[industries[i]] = K[i]
+
             if self.capital[industries[i]]<1:
                 self.capital[industries[i]]=1
                 
         # Production
-        inc_labor = {}
-        inc_production = {}
         for i in range(len(industries)):
             self.wage[industries[i]] = 0
             self.wage_bill[industries[i]] = 0
@@ -261,20 +268,12 @@ class Nation:
             self.production[industries[i]] = production_function(self.A[i], self.alpha[industries[i]],
                                                                  self.labor[industries[i]], self.beta[industries[i]], 
                                                                  self.capital[industries[i]])
-            self.supply[industries[i]] = self.production[industries[i]] 
-
-            # wage, roi = wageAsMarginalProductROIAsResidual(self,i,industries,production_function)
             wage,roi = self.wage_algorithm(self,i,industries, production_function)
 
             self.wage[industries[i]] = wage
-            self.wage_bill[industries[i]] = self.wage[industries[i]] * self.labor[industries[i]]
             self.ROI[industries[i]] = roi          
-            
             self.supply[industries[i]] = self.production[industries[i]] 
         
-
-
-
     def updatePricesAndConsume(self,country_export: Dict[str,float], trade = False):
         industries = self.industries
         ## compute the effect of trade...
@@ -284,18 +283,21 @@ class Nation:
             # self.trade_volume = trade_volume[self.nation]
             
 
-        self.pricing_algorithm(self, algorithm = self.utility_algorithm)
+        self.pricing_algorithm(self)
 
     
-    def utilityFunction(self, consumption: Dict[str,float], algorithm, weights=None, elasticities=None, sigma=None):
+    def utilityFunction(self, consumption: Dict[str,float], weights=None, elasticities=None, sigma=None):
+        import numpy as np
+
         UT = 1
-        if algorithm =='geometric':
+        if self.utility_algorithm =='geometric':
             for i in range(len(self.industries)):
                 UT = UT * consumption[self.industries[i]]
+
             # Utility
             UT = UT ** (1 / float(len(self.industries)))
 
-        elif algorithm=='ces':
+        elif self.utility_algorithm=='ces':
             w = weights
             s = elasticities
             p = sigma
@@ -313,8 +315,6 @@ class Nation:
             self.supply[self.industries[i]] -= exported[self.industries[i]]
             ## make sure we didn't fuck up
             #assert self.supply[self.industries[i]]>=0
-
-
                  
     def get_capital(self):
             return self.capital        
@@ -354,6 +354,7 @@ class Nation:
             return self.mrs
     
     def compute_hypothetical_demand(self,P,industries):
+        from functions import demand_function
         demand = {}
         for i in range(len(industries)):
             demand[industries[i]] = 0

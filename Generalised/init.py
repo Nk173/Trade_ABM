@@ -3,31 +3,29 @@
 
 case = '2x2'
 
-if case=='2x2':
+if case == '2x2':
     countries = ['USA','CHINA']
     count = [100, 1000]
     industries = ['wine','cloth']
 
     P={}
-    P['USA'] = [1,1]
+    P['USA'] =   [1,1]
     P['CHINA'] = [1,1]
 
     A={}
-    A['USA']= [0.5, 2]
+    A['USA']=    [0.5, 2]
     A['CHINA'] = [0.2, 0.05]
 
     alpha={}
-    alpha['USA'] = [0.5, 0.5]
+    alpha['USA'] =   [0.5, 0.5]
     alpha['CHINA'] = [0.5, 0.5]
 
     beta={}
-    beta['USA'] = [0.5, 0.5]
+    beta['USA'] =   [0.5, 0.5]
     beta['CHINA'] = [0.5, 0.5]
-    shock=None
-
-    weights=[1,1] 
-    elasticities=[0.5,0.5]
-    sigma= 1/0.5
+    
+    shock = [0.2, 0.8]
+  
 
 # 2x3 case]
 if case == '2x3':
@@ -44,13 +42,18 @@ if case == '2x3':
     A['CHINA'] = [0.2, 0.05,1]
 
     alpha={}
-    alpha['USA'] = [0.5,0.5, 0.5]
+    alpha['USA'] = [0.7,0.7, 0.7]
     alpha['CHINA'] = [0.5, 0.5, 0.5]
 
     beta={}
     beta['USA'] = [0.5, 0.5,0.5]
     beta['CHINA'] = [0.5, 0.5,0.5]
 
+    shock=None
+
+    weights=[1,1] 
+    elasticities=[0.5,0.5]
+    sigma= 1/0.5
 # 3x3 case
 if case =='3x3asym':
     countries = ['USA','CHINA', 'INDIA']

@@ -2,8 +2,10 @@ from typing import Dict
 
 from Agents import Nation
 import matplotlib.pyplot as plt
+from pricing import compute_price_marginal_utilities
+from wages import wageAsMarginalProductROIAsResidual
 
-from functions import doAllTrades
+from tradeutils import doAllTrades
 
 plt.rcParams["figure.figsize"] = 20, 10
 
@@ -31,7 +33,6 @@ for c in countries:
             resultsdict[c][v][i] = []
 
 # Setup Samuelson run with autarky: 0-500, Trade:500-1000, and partner_develops:1000-2000
-
 ## Create Nations
 names = ['USA', 'CHINA']
 count = [100, 1000]
@@ -49,12 +50,18 @@ USA_ = Nation(names[0], count[0], industries,countries,
               [P_price_wine[0], P_price_cloth[0]],
               [A_wine[0], A_cloth[0]],
               [alpha_wine[0], alpha_cloth[0]],
-              [beta_wine[0], beta_cloth[0]])
+              [beta_wine[0], beta_cloth[0]],
+              pricing_algorithm=compute_price_marginal_utilities,
+              wage_algorithm=wageAsMarginalProductROIAsResidual,
+              utility_algorithm='geometric',d=0)
 CHINA_ = Nation(names[1], count[1], industries,countries,
                 [P_price_wine[1], P_price_cloth[1]],
                 [A_wine[1], A_cloth[1]],
                 [ alpha_wine[1], alpha_cloth[1]],
-                [beta_wine[1], beta_cloth[1]])
+                [beta_wine[1], beta_cloth[1]],
+                pricing_algorithm=compute_price_marginal_utilities,
+                wage_algorithm=wageAsMarginalProductROIAsResidual,
+                utility_algorithm='geometric',d=0)
 
 nationsdict : Dict[str,Nation] = {
     "USA": USA_,
@@ -74,7 +81,7 @@ for i in industries:
 
 net_exports = None
 dev_shock = [0,0]
-for t in range(4000):
+for t in range(2000):
     if t > 500:
         tr = True
     if t > 1000:

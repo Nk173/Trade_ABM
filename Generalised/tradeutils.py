@@ -184,7 +184,7 @@ def doOneTrade(trade_volume,
     difference = abs(one.prices[industry] - two.prices[industry])
     percentage_difference = (difference / one.prices[industry]) * 100
 
-    if difference < 0.01 or percentage_difference < 5:
+    if difference < 0.01 or percentage_difference < 1:
         return
     ## okay, now let's find who is going to export to who...
 
