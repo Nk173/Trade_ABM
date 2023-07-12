@@ -1,13 +1,39 @@
-from init import case, countries, count, industries, P, A, alpha, beta, shock, weights, elasticities, sigma
+# from init import case, countries, count, industries, P, A, alpha, beta, shock
 from pricing import compute_price_immediate_marginal_utility, compute_price_marginal_utilities
 from pricing import gd_pricing, demand_gap_pricing
 from wages import wagesAsShareOfMarginalProduct, wageAsMarginalProductROIAsResidual, wageAsShareOfProduct
 
-def gulden(case=case, countries=countries, count=count, industries=industries, P=P, A=A, 
-           alpha=alpha, beta=beta, total_time = 3000, trade_time = 4000,
-           pd_time=10000, shock=shock, cm_time=6000, autarky_time=5000,
-           pricing_algorithm =compute_price_marginal_utilities, wage_algorithm = wageAsShareOfProduct,
-           utility_algorithm = 'geometric', weights=weights,elasticities=elasticities,sigma=sigma, plot=True, d=0):
+case = 'new_trader'
+countries = ['USA','CHINA','INDIA']
+count = [100, 1000,1000]
+industries = ['wine','cloth']
+
+P={}
+P['USA'] =   [1,1]
+P['CHINA'] = [1,1]
+P['INDIA'] = [1,1]
+
+A={}
+A['USA']=    [0.5, 2]
+A['CHINA'] = [0.2, 0.05]
+A['INDIA'] = [0.2, 0.05]
+
+alpha={}
+alpha['USA'] =   [0.7, 0.7]
+alpha['CHINA'] = [0.7, 0.7]
+alpha['INDIA'] = [0.7, 0.7]
+
+beta={}
+beta['USA'] =   [0.4, 0.4]
+beta['CHINA'] = [0.4, 0.4]
+beta['INDIA'] = [0.4, 0.4]   
+
+shock = [0.2, 0.8]
+
+def gulden(case=case, countries=countries, count=count, industries=industries, P=P, A=A, alpha=alpha, beta=beta,
+        total_time = 3000, trade_time = 4000, trading_countries = countries,
+        pd_time=10000, shock=shock, cm_time=6000, autarky_time=5000, new_trader_time=2000,
+        pricing_algorithm =compute_price_marginal_utilities, wage_algorithm = wageAsMarginalProductROIAsResidual, utility_algorithm = 'geometric', plot=True, d=0):
     
     from typing import Dict
     from functions import production_function, demand_function
@@ -93,25 +119,38 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
         if t>=cm_time:
             capital_mobility=True
 
+        if t==new_trader_time:
+            trading_countries = countries
+            
         for c in countries:
             nationsdict[c].update(nationsdict=nationsdict, capital_mobility=capital_mobility)
 
         if tr:
-            trades = doAllTrades(tv, industries, countries, nationsdict, "wine")
+            trades = doAllTrades(tv, industries, trading_countries, nationsdict, "wine")
             #tv = trades["trade_volume"] not needed, this is exported anyway...
             net_exports=trades["net_exports"]
             # print("t is " + str(t))
             # print(tv["wheat"]["USA"]["INDIA"])
 
         ## update trading....
-        for c in countries:
-            nationsdict[c].updatePricesAndConsume(trade=tr,country_export=net_exports[c] if tr else None, weights=weights, elasticities=elasticities, sigma=sigma)
+        try: 
+            for c in countries:
+                nationsdict[c].updatePricesAndConsume(trade=tr,country_export=net_exports[c] if tr else None)
 
+        except:
+            for c in trading_countries:
+                nationsdict[c].updatePricesAndConsume(trade=tr,country_export=net_exports[c] if tr else None)
+
+            nationsdict['INDIA'].updatePricesAndConsume(trade=False, country_export=None)
+
+        for c in countries:
             for v in range(len(variables)):
                 for i in industries:
-                    resultsdict[c][variables[v]][i].append(getattr(nationsdict[c],functions[v])()[i])
+                        resultsdict[c][variables[v]][i].append(getattr(nationsdict[c],functions[v])()[i])
                     
-            resultsU[c].append(nationsdict[c].get_utility())
+            resultsU[c].append(nationsdict[c].get_utility())        
+            
+            
 
     production = {}
     for c in countries:
@@ -140,12 +179,12 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
         
         # axs[k].plot(sum(resultsU.values()), label='{}-{}'.format('World','utility'))
         plt.suptitle('Generalised {}'.format(case), fontsize=16)
-        plt.savefig('plots/{}_wp.png'.format(case))
+        plt.savefig('plots/{}.png'.format(case))
     return production, resultsdict
 
 # Model--Run
-production, resultsdict = gulden(case=case, countries=countries, count=count, industries=industries, P=P, A=A, alpha=alpha, beta=beta, total_time = 2000, trade_time = 5000,
-                                         pd_time=10000, shock=shock, cm_time=5000, autarky_time=5000,
-                                         pricing_algorithm =compute_price_marginal_utilities, wage_algorithm = wageAsMarginalProductROIAsResidual, utility_algorithm = 'ces', 
-                                         weights=weights, elasticities=elasticities, sigma=sigma, d=0.000000005)
+production, resultsdict = gulden(case=case, countries=countries, count=count, industries=industries, P=P, A=A, alpha=alpha, beta=beta, 
+                                 total_time = 2000, trade_time = 500, trading_countries=['USA','CHINA'],
+                                 pd_time=10000, shock=shock, cm_time=6000, autarky_time=5000, new_trader_time=1000,
+                                 pricing_algorithm =demand_gap_pricing, wage_algorithm = wageAsMarginalProductROIAsResidual, utility_algorithm = 'geometric', d=0.000000005)
 

@@ -1,9 +1,9 @@
-def compute_price_marginal_utilities(country):
+def compute_price_marginal_utilities(country, weights, elasticities, sigma):
     
     consumption_hypothetical = country.supply.copy()
-    country.UT = country.utilityFunction(country.supply)
+    country.UT = country.utilityFunction(country.supply, weights=weights, elasticities=elasticities, sigma=sigma)
     consumption_hypothetical['wine'] += 1.0
-    marginal_utility_wine = country.utilityFunction(consumption_hypothetical) - country.UT
+    marginal_utility_wine = country.utilityFunction(consumption_hypothetical, weights=weights, elasticities=elasticities, sigma=sigma) - country.UT
     consumption_hypothetical['wine'] -= 1.0
     country.mrs['wine'] = 1
     import math
@@ -13,7 +13,7 @@ def compute_price_marginal_utilities(country):
         industry = country.industries[i]
         country.mrs[industry] = 1
         consumption_hypothetical[industry]+= 1.0
-        marginal_utility = country.utilityFunction(consumption_hypothetical) - country.UT
+        marginal_utility = country.utilityFunction(consumption_hypothetical, weights=weights, elasticities=elasticities, sigma=sigma) - country.UT
 
         consumption_hypothetical[industry]-= 1.0
         country.mrs[industry] = marginal_utility / marginal_utility_wine

@@ -1,17 +1,13 @@
 # # -*- coding: utf-8 -*-
-# Define the citizen agent
+import random
+import numpy as np
+
+# create a vectorized version of the Citizen class
+# this is the same as the Citizen class in agents.py
+# but with the update method vectorized
+
 class Citizen:
-    '''
-    Citizen belongs in a nation and has a 1 unit of labor for a wage and an 1 unit of capital for a return. Citizen consumes both goods using   all her income. 
-    
-    Citizen reconsiders job and invesment choices 0.4% of the time based on the wages and ROI from the 2 industries in the Nation. 
-    
-    Under capital mobility, citizen can invest in industries abroad if it offers a better return. A fraction (repatriation_pct) of this income can be brought back to the Nation of residence while the remaining can be used to purchase goods in the other country.
-    
-    '''
-    # Initiatilisations
     def __init__(self, nation, industries, countries,d):
-        import random
         self.nation = nation
         self.income = 0
         self.wage = 0 
@@ -26,8 +22,6 @@ class Citizen:
         self.d = d             
     
     def update(self, nationsdict, capital_mobility = False,repat_pct=0):
-        import random
-        import numpy as np
         industries = self.industries
         countries = self.countries
         for c in range(len(countries)):
@@ -274,7 +268,7 @@ class Nation:
             self.ROI[industries[i]] = roi          
             self.supply[industries[i]] = self.production[industries[i]] 
         
-    def updatePricesAndConsume(self,country_export: Dict[str,float], trade = False):
+    def updatePricesAndConsume(self,country_export: Dict[str,float], trade = False, weights=None, elasticities=None, sigma=None):
         industries = self.industries
         ## compute the effect of trade...
         if trade == True:
@@ -282,10 +276,8 @@ class Nation:
             self.resolve_trade(country_export)
             # self.trade_volume = trade_volume[self.nation]
             
+        self.pricing_algorithm(self, weights, elasticities, sigma)
 
-        self.pricing_algorithm(self)
-
-    
     def utilityFunction(self, consumption: Dict[str,float], weights=None, elasticities=None, sigma=None):
         import numpy as np
 
@@ -304,8 +296,8 @@ class Nation:
             weighted_consumption = np.zeros((len(self.industries),1))
             for i in range(len(self.industries)):
                 weighted_consumption[i] = w[i] * consumption[self.industries[i]] ** s[i]
-
             UT = np.sum(weighted_consumption) ** (1 / p)
+
         return UT
 
     def resolve_trade(self,exported: Dict[str,float] ):
