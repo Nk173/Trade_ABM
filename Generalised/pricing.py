@@ -24,7 +24,7 @@ def compute_price_marginal_utilities(country, weights, elasticities, sigma):
         elif country.mrs[industry] < country.prices[industry]:
             country.prices[industry] = country.prices[industry] - (country.prices[industry] * min(0.02, error))
 
-def demand_gap_pricing(country):
+def demand_gap_pricing(country, weights=None, elasticities=None, sigma=None):
     # Prices (price of wine is set to 1 and is the reference good)
     country.UT = country.utilityFunction(country.supply)
     industries = country.industries
@@ -33,8 +33,7 @@ def demand_gap_pricing(country):
             country.prices[industries[i]] = country.prices[industries[i]] + (country.prices[industries[i]] * 0.02)
         else:
             country.prices[industries[i]] = country.prices[industries[i]] - (country.prices[industries[i]] * 0.02)
-
-
+    
 def compute_price_immediate_marginal_utility(country):
 
     consumption_hypothetical = country.supply.copy()

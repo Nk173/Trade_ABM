@@ -146,6 +146,20 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
 # Model--Run
 production, resultsdict = gulden(case=case, countries=countries, count=count, industries=industries, P=P, A=A, alpha=alpha, beta=beta, total_time = 2000, trade_time = 5000,
                                          pd_time=10000, shock=shock, cm_time=5000, autarky_time=5000,
-                                         pricing_algorithm =compute_price_marginal_utilities, wage_algorithm = wageAsMarginalProductROIAsResidual, utility_algorithm = 'ces', 
-                                         weights=weights, elasticities=elasticities, sigma=sigma, d=0.000000005)
+                                         pricing_algorithm =demand_gap_pricing, wage_algorithm = wageAsMarginalProductROIAsResidual, utility_algorithm = 'geometric', 
+                                         weights=weights, elasticities=elasticities, sigma=sigma, d=0.00000000)
+# save results from resultsdict to a file
+import pandas as pd
+for nation in range(len(countries)):
+    for industry in range(len(industries)):
+        df = pd.DataFrame({'t':range(2000),
+                           'labor':resultsdict[countries[nation]]['labor'][industries[industry]],
+                           'capital':resultsdict[countries[nation]]['capital'][industries[industry]],
+                           'production':resultsdict[countries[nation]]['production'][industries[industry]],
+                           'wages':resultsdict[countries[nation]]['wages'][industries[industry]],
+                           'ROI':resultsdict[countries[nation]]['ROI'][industries[industry]],
+                           'prices':resultsdict[countries[nation]]['prices'][industries[industry]],
+                           'demand':resultsdict[countries[nation]]['demand'][industries[industry]]
+                           })
+        df.to_csv('Model_{}_{}.csv'.format(countries[nation], industries[industry]))
 

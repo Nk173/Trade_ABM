@@ -5,7 +5,7 @@ case = '2x2'
 
 if case == '2x2':
     countries = ['USA','CHINA']
-    count = [100, 100]
+    count = [100, 1000]
     industries = ['wine','cloth']
 
     P={}
@@ -13,8 +13,8 @@ if case == '2x2':
     P['CHINA'] = [1,1]
 
     A={}
-    A['USA']=    [2, 1]
-    A['CHINA'] = [1, 2]
+    A['USA']=    [0.5, 2]
+    A['CHINA'] = [0.2, 0.05]
 
     alpha={}
     alpha['USA'] =   [0.5, 0.5]

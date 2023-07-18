@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 import numpy as np
 import random
 
@@ -110,4 +108,3 @@ for nation in range(n_countries):
         ax[1,1].set_title('Capital')
 plt.legend()
 plt.show()
->>>>>>> 1a34f2d (vectorized branch - initial commit)

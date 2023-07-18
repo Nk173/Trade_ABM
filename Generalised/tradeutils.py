@@ -199,7 +199,6 @@ def doOneTrade(trade_volume,
     ##country two: how much do they hold of the item in the tradeable industry vs the nominal good (money)
     money_importer = importer.production[nominal_good] - net_exports[importerName][nominal_good]
 
-
     ## let's assume we really just want to move 0.5 items from one country to another...
     target_trade_change: float = 0.5
     ## you buy at seller local price?
