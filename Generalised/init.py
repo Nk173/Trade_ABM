@@ -1,7 +1,7 @@
 ## Initialisations
 # 2x2 case
 
-case = '2x2'
+case = '3x3'
 
 if case == '2x2':
     countries = ['USA','CHINA']

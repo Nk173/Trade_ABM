@@ -1,13 +1,15 @@
 import numpy as np
 
 def updatePricesAndConsume(prices, D, S ,pricing, utility='geometric'):
+    consumption_hypothetical = S.copy()
+    UT = utilityFunction(consumption_hypothetical, algorithm=utility)
     if pricing == 'dgp':
         prices[D>S] = prices[D>S] + prices[D>S]*.02
         prices[D<S] = prices[D<S] - prices[D<S]*.02
 
     elif pricing == 'cpmu':
-        consumption_hypothetical = S.copy()
-        UT = utilityFunction(consumption_hypothetical, algorithm=utility)
+        # consumption_hypothetical = S.copy()
+        # UT = utilityFunction(consumption_hypothetical, algorithm=utility)
         mrs = np.ones((S.shape))
         consumption_hypothetical[:,0] += 1
         marginal_utility_wine= utilityFunction(consumption_hypothetical, algorithm=utility) - UT
@@ -32,8 +34,8 @@ def updatePricesAndConsume(prices, D, S ,pricing, utility='geometric'):
         # #     print('error')
         # prices[(positive)] = prices[(positive)] + prices[(positive)]*min(0.02, error[positive])
         # prices[(negative)] = prices[(negative)] - prices[(negative)]*min(0.02, error[negative])
-        prices[:,0] = 1
-        return prices, UT    
+    prices[:,0] = 1
+    return prices, UT    
     
 # vectorise the above funciton
 # def updatePricesAndConsume(prices, D, S ,pricing):

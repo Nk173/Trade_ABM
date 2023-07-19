@@ -34,7 +34,7 @@ def resetAllMonetaryFlows(trade_volume, S, prices):
         for j in range(S.shape[1]):
             if j > 0:
                 np.seterr(divide='ignore', invalid='ignore')
-                export_adjustment[i, j] = 1 if net_exports[i, j] >0 else min(1,S[i, j]/abs(net_exports[i,j]))
+                export_adjustment[i, j] = 1 if net_exports[i, j] >0 else min(1, S[i, j]/abs(net_exports[i,j]))
                 if abs(export_adjustment[i,j])>1:
                     print('Error')
                     sys.exit(0) 
@@ -60,7 +60,7 @@ def resetAllMonetaryFlows(trade_volume, S, prices):
                         trade_cost = nominal_budget_left[c2]
                         new_trade_volume = -trade_cost/prices[c1,i]
 
-                    if abs(trade_cost)> 1000 or abs(new_trade_volume)>1000:
+                    if abs(trade_cost)> 10000 or abs(new_trade_volume)>10000:
                         print('Error')
                         sys.exit(0)
 
@@ -76,30 +76,29 @@ def resetAllMonetaryFlows(trade_volume, S, prices):
 
 
 def doAllTrades(trade_volume, S, prices):
+        resetAllMonetaryFlows(trade_volume, S, prices)
+        net_exports = compute_net_export(S, trade_volume)
 
-    resetAllMonetaryFlows(trade_volume, S, prices)
-    net_exports = compute_net_export(S, trade_volume)
+        # pairings = []
+        # for i in range(S.shape[0]):
+        #     for j in range(i+1, S.shape[0]):
+        #         for k in range(1,S.shape[1]):
+        #             pairings.append([i,j,k])
 
-    # pairings = []
-    # for i in range(S.shape[0]):
-    #     for j in range(i+1, S.shape[0]):
-    #         for k in range(1,S.shape[1]):
-    #             pairings.append([i,j,k])
+        i, j, k = np.mgrid[0:S.shape[0], 0:S.shape[0], 1:S.shape[1]]
+        valid_pairs_mask = i < j
+        pairings = np.vstack((i[valid_pairs_mask], j[valid_pairs_mask], k[valid_pairs_mask])).T.tolist()
 
-    i, j, k = np.mgrid[0:S.shape[0], 0:S.shape[0], 1:S.shape[1]]
-    valid_pairs_mask = i < j
-    pairings = np.vstack((i[valid_pairs_mask], j[valid_pairs_mask], k[valid_pairs_mask])).T.tolist()
-
-    random.shuffle(pairings)
-    for pairing in pairings:
-        doOneTrade(trade_volume, 
-                   S, net_exports, 
-                   prices, 
-                   pairing[2], 
-                   pairing[1], 
-                   pairing[0]
-                   )
-    return trade_volume, net_exports
+        random.shuffle(pairings)
+        for pairing in pairings:
+            doOneTrade(trade_volume, 
+                    S, net_exports, 
+                    prices, 
+                    pairing[2], 
+                    pairing[1], 
+                    pairing[0]
+                    )
+        return trade_volume, net_exports
 
 def doOneTrade(trade_volume, S, net_exports, prices, industry, c2, c1):
     difference = abs(prices[c1, industry] - prices[c2, industry])
