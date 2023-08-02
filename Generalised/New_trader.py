@@ -5,7 +5,7 @@ from wages import wagesAsShareOfMarginalProduct, wageAsMarginalProductROIAsResid
 
 case = 'new_trader'
 countries = ['USA','CHINA','INDIA']
-count = [100, 1000,1000]
+count = [100, 1000, 1000]
 industries = ['wine','cloth']
 
 P={}
@@ -19,14 +19,35 @@ A['CHINA'] = [0.2, 0.05]
 A['INDIA'] = [0.2, 0.05]
 
 alpha={}
-alpha['USA'] =   [0.7, 0.7]
-alpha['CHINA'] = [0.7, 0.7]
-alpha['INDIA'] = [0.7, 0.7]
+alpha['USA'] =   [0.5, 0.5]
+alpha['CHINA'] = [0.5, 0.5]
+alpha['INDIA'] = [0.5, 0.5]
 
 beta={}
-beta['USA'] =   [0.4, 0.4]
-beta['CHINA'] = [0.4, 0.4]
-beta['INDIA'] = [0.4, 0.4]   
+beta['USA'] =   [0.5, 0.5]
+beta['CHINA'] = [0.5, 0.5]
+beta['INDIA'] = [0.5, 0.5]   
+
+# 3-product case
+# P={}
+# P['USA'] =   [1,1,1]
+# P['CHINA'] = [1,1,1]
+# P['INDIA'] = [1,1,1]
+
+# A={}
+# A['USA']=    [0.5, 2, 1]
+# A['CHINA'] = [0.2, 0.05, 1]
+# A['INDIA'] = [0.15, 0.1, 1]
+
+# alpha={}
+# alpha['USA'] =   [0.5, 0.5, 0.5]
+# alpha['CHINA'] = [0.5, 0.5, 0.5]
+# alpha['INDIA'] = [0.5, 0.5, 0.5]
+
+# beta={}
+# beta['USA'] =   [0.5, 0.5,0.5]
+# beta['CHINA'] = [0.5, 0.5,0.5]
+# beta['INDIA'] = [0.5, 0.5,0.5]   
 
 shock = [0.2, 0.8]
 
@@ -179,12 +200,21 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
         
         # axs[k].plot(sum(resultsU.values()), label='{}-{}'.format('World','utility'))
         plt.suptitle('Generalised {}'.format(case), fontsize=16)
-        plt.savefig('plots/{}.png'.format(case))
+        plt.savefig('plots/{}_dgp.png'.format(case))
     return production, resultsdict
 
 # Model--Run
-production, resultsdict = gulden(case=case, countries=countries, count=count, industries=industries, P=P, A=A, alpha=alpha, beta=beta, 
+production, resultsdict = gulden(case='new_trader_2', countries=countries, count=count, industries=industries, P=P, A=A, alpha=alpha, beta=beta, 
                                  total_time = 2000, trade_time = 500, trading_countries=['USA','CHINA'],
                                  pd_time=10000, shock=shock, cm_time=6000, autarky_time=5000, new_trader_time=1000,
                                  pricing_algorithm =demand_gap_pricing, wage_algorithm = wageAsMarginalProductROIAsResidual, utility_algorithm = 'geometric', d=0.000000005)
+
+production, resultsdict = gulden(case='3-traders_2', countries=countries, count=count, industries=industries, P=P, A=A, alpha=alpha, beta=beta, 
+                                 total_time = 2000, trade_time = 500, trading_countries=['USA','CHINA','INDIA'],
+                                 pd_time=10000, shock=shock, cm_time=6000, autarky_time=5000,
+                                 pricing_algorithm =demand_gap_pricing, wage_algorithm = wageAsMarginalProductROIAsResidual, utility_algorithm = 'geometric', d=0.000000005)
+
+
+# Model run with different pricing algorithm
+
 

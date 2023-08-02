@@ -9,6 +9,7 @@ from tqdm import tqdm
 np.random.seed(0)
 
 # Constants
+case = 'sameulson_model_2x2'
 iterations = 1000
 n_countries = 2
 countries = ['USA', 'China']
@@ -16,19 +17,23 @@ products= ['wine', 'cloth']
 n_products = 2
 alpha = np.array([[0.5, 0.5],
                   [0.5, 0.5]])  # output elasticity of labor
+
 beta = np.array([[0.5, 0.5],
                  [0.5, 0.5]])  # output elasticity of capital
+
 A = np.array([[0.5, 2.0],
               [0.2, 0.05]])  # Total Factor Productivity
+
 shock = np.array([[0.5, 2.0],
                   [0.2, 0.8]])  # Total Factor Productivity
 
 # Number of citizens in each nation
 citizens_per_nation = [100, 1000]
 
-def gulden_vectorised(n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta, 
-                      iterations=2000, Tr_time=500, pricing_algorithm='cpmu', utility_algorithm='geometric', wage_algorithm = 'marginal_product',
-                      csv = False, plot = False, shock = A, shock_time = 1000, cap_mobility = False, cm_time=10000):
+
+def gulden_vectorised(case, n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta, 
+                      iterations=2000, Tr_time=500, autarky_time= 10000, pricing_algorithm='cpmu', utility_algorithm='geometric', wage_algorithm = 'marginal_product',
+                      csv = False, plot = False, shock = shock, shock_time = 1000, cap_mobility = False, cm_time=10000, d=0.0):
     
     ## Citizen-level
     # Initialize prices for each good in each nation
@@ -37,20 +42,14 @@ def gulden_vectorised(n_countries, n_products, countries, products, citizens_per
 
     # Initialize industry choices for labor and capital for each citizen in each nation
     labor_choices = [np.zeros(citizens, dtype=int) for citizens in citizens_per_nation]
-    capital_choices = [np.zeros(citizens, dtype=int) for citizens in citizens_per_nation]
+    capital_choices = [np.zeros((citizens, 2), dtype=int) for citizens in citizens_per_nation]    
     income = [np.zeros(citizens) for citizens in citizens_per_nation]
     
     # Allow capital choices to take both industry and nation if capital mobility is enabled
-    if cap_mobility:
-        capital_choices = [np.zeros((citizens, 2), dtype=int) for citizens in citizens_per_nation]
-        for nation in range(n_countries):
-            labor_choices[nation] = np.random.choice(range(n_products), citizens_per_nation[nation])
-            capital_choices[nation][:,0] = np.random.choice(range(n_products), citizens_per_nation[nation])
-            capital_choices[nation][:,1] = np.ones(citizens_per_nation[nation])*nation
-    else:
-        for nation in range(n_countries):
-            labor_choices[nation] = np.random.choice(range(n_products), citizens_per_nation[nation])
-            capital_choices[nation] = np.random.choice(range(n_products), citizens_per_nation[nation])
+    for nation in range(n_countries):
+        labor_choices[nation] = np.random.choice(range(n_products), citizens_per_nation[nation])
+        capital_choices[nation][:,0] = np.random.choice(range(n_products), citizens_per_nation[nation])
+        capital_choices[nation][:,1] = np.ones(citizens_per_nation[nation])*nation
 
     ## Nation-level
     # Calculate wages and returns to capital for each industry in each nation
@@ -71,18 +70,30 @@ def gulden_vectorised(n_countries, n_products, countries, products, citizens_per
     returns = np.zeros((n_countries, n_products,iterations))
     utility = np.zeros((n_countries, iterations))
 
+    try:
+        if len(Tr_time)>1:
+            T0 = Tr_time[0]
+            T1 = Tr_time[1]
+    except:
+        T0 = Tr_time
+        T1 = 0
+
     for t in tqdm(range(iterations)):
 
         Tr=False
         cap_mobility = False
-        if t>=Tr_time:
+
+        if t>=T0 or (T1>0 and t>=T1) :
             Tr=True
+
+        if t>=autarky_time:
+            if (T1>0 and t<T1):
+                Tr=False
 
         if t>shock_time:
             A = shock
 
-        if t>=cm_time:
-            Tr = False
+        if t>cm_time:
             cap_mobility = True
 
         
@@ -98,15 +109,14 @@ def gulden_vectorised(n_countries, n_products, countries, products, citizens_per
             max_return_industry = np.argmax(R[nation,:])
 
             event_occurs = np.random.binomial(1, 0.004, size=citizens_per_nation[nation])
-            should_change_labor = (event_occurs==1) * (W[nation, labor_choices[nation]]< W[nation, max_wage_industry])
+            should_change_labor = (event_occurs==1) * (W[nation, labor_choices[nation]]< W[nation, max_wage_industry]*(1+d))
             
             if cap_mobility:
                 max_return_industry = np.unravel_index(np.argmax(R, axis=None), R.shape)
-                # print(max_return_industry)
-                should_change_capital = (event_occurs==1) * (R[capital_choices[nation][:,1], capital_choices[nation][:,0]]<R[max_return_industry])
+                should_change_capital = (event_occurs==1) * (R[capital_choices[nation][:,1], capital_choices[nation][:,0]]<R[max_return_industry]*(1+d))
             
             else:
-                should_change_capital = (event_occurs==1) * (R[nation, capital_choices[nation][:,0]]< R[nation, max_return_industry])
+                should_change_capital = (event_occurs==1) * (R[nation, capital_choices[nation][:,0]]< R[nation,max_return_industry]*(1+d))
             labor_choices[nation][should_change_labor==1] = max_wage_industry
             capital_choices[nation][should_change_capital==1] = max_return_industry
             
@@ -172,7 +182,7 @@ def gulden_vectorised(n_countries, n_products, countries, products, citizens_per
                                 'prices':prices_vec[nation,industry,:],
                                 'demand':demand[nation,industry,:],
                                 'utility':utility[nation,:]})
-                df.to_csv('csvs/{}_{}.csv'.format(countries[nation], products[industry]))
+                df.to_csv('csvs/vectorised_{}_{}.csv'.format(countries[nation], products[industry]))
     
     # Plot the results
     if plot:
@@ -199,12 +209,19 @@ def gulden_vectorised(n_countries, n_products, countries, products, citizens_per
                 ax[3,1].set_title('Utility')
 
         ax[3,0].legend()
-        plt.show()
+        plt.savefig('plots/vectorised_{}.png'.format(case))
 
-# ## model run
-# t1 = time.time()
-# gulden_vectorised(n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta,
-#                   iterations=2000, Tr_time=500, pricing_algorithm='dgp', utility_algorithm='geometric',
-#                   cap_mobility = True, shock =shock, shock_time=10000, cm_time=10000, plot=False)
-# t2 = time.time()
-# print('Vectorised Trade model time taken: {} seconds'.format(t2-t1))
+# model run
+t1 = time.time()
+gulden_vectorised(case, n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta,
+                  iterations=2000, Tr_time=500, autarky_time=15000, pricing_algorithm='dgp', utility_algorithm='geometric',
+                  wage_algorithm='marginal_product',
+                  cap_mobility = False, shock = shock, shock_time=1000, cm_time=2500, plot=True, csv=False)
+t2 = time.time()
+print('Vectorised Trade model time taken: {} seconds'.format(t2-t1))
+
+
+
+
+
+

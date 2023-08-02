@@ -52,15 +52,15 @@ def resetAllMonetaryFlows(trade_volume, S, prices):
                     continue
                 old_trade_volume = trade_volume[c1,c2,i]
 
-                if old_trade_volume< 0.0:
+                if old_trade_volume < 0.0:
                     new_trade_volume = old_trade_volume * export_adjustment[c1,i]
-                    trade_cost = -trade_volume[c1,c2,i]/prices[c1,i]
+                    trade_cost = -trade_volume[c1,c2,i]*prices[c1,i]
 
                     if nominal_budget_left[c2] < abs(trade_cost):
                         trade_cost = nominal_budget_left[c2]
                         new_trade_volume = -trade_cost/prices[c1,i]
 
-                    if abs(trade_cost)> 10000 or abs(new_trade_volume)>10000:
+                    if abs(trade_cost)> 1000 or abs(new_trade_volume)>1000:
                         print('Error')
                         sys.exit(0)
 
@@ -73,7 +73,6 @@ def resetAllMonetaryFlows(trade_volume, S, prices):
                     old_price = prices[c1,i]
                     nominal_budget_left[c1] += (trade_cost + old_trade_volume * old_price)
                     nominal_budget_left[c2] -= (trade_cost + old_trade_volume * old_price)
-
 
 def doAllTrades(trade_volume, S, prices):
         resetAllMonetaryFlows(trade_volume, S, prices)

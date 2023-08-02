@@ -278,6 +278,11 @@ class Nation:
             
         self.pricing_algorithm(self, weights, elasticities, sigma)
 
+    def TechChange(A):
+    
+        return A
+
+
     def utilityFunction(self, consumption: Dict[str,float], weights=None, elasticities=None, sigma=None):
         import numpy as np
 

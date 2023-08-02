@@ -15,3 +15,4 @@ def demand_function(Y, P):
         D[p] = Y / (len(P) * P[p])
 
     return D
+

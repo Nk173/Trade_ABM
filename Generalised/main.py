@@ -159,8 +159,8 @@ def gulden(case=case, countries=countries, count=count, industries=industries, P
 # Model--Run
 t1 = time.time()
 production, resultsdict = gulden(case=case, countries=countries, count=count, industries=industries, P=P, A=A, alpha=alpha, beta=beta, total_time = 2000, trade_time = 500,
-                                         pd_time=10000, shock=shock, cm_time=5000, autarky_time=5000,
-                                         pricing_algorithm =compute_price_marginal_utilities, wage_algorithm = wageAsMarginalProductROIAsResidual, utility_algorithm = 'geometric', 
-                                         weights=weights, elasticities=elasticities, sigma=sigma, d=0.00000000, plot=False)
+                                         pd_time=1000, shock=shock, cm_time=5000, autarky_time=5000,
+                                         pricing_algorithm =demand_gap_pricing, wage_algorithm = wageAsMarginalProductROIAsResidual, utility_algorithm = 'geometric', 
+                                         weights=weights, elasticities=elasticities, sigma=sigma, d=0.00000000, plot=False, csv=False)
 t2 = time.time()
 print('Trade_model Time taken: {} seconds'.format(t2-t1))
