@@ -101,8 +101,8 @@ def doOneTrade(trade_volume, S, net_exports, prices, industry, c2, c1, trade_cha
     difference = abs(prices[c1, industry] - prices[c2, industry])
     percentage_difference = (difference/prices[c1, industry]) * 100
 
-    # if difference < 0.01 or percentage_difference < 1:
-    #     return
+    if difference < 0.01 or percentage_difference < 1:
+        return
     
     if prices[c1, industry] < prices[c2, industry]:
         exporterName = c1; importerName = c2

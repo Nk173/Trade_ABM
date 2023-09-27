@@ -39,7 +39,7 @@ citizens_per_nation = [500, 500]
 
 
 def gulden_vectorised(case, n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta, 
-                      iterations=3000, Tr_time=1000, trade_chage=0.5, autarky_time= 10000, pricing_algorithm='cpmu', utility_algorithm='geometric', wage_algorithm = 'marginal_product', share=share,
+                      iterations=3000, Tr_time=1000, trade_change=0.5, autarky_time= 10000, pricing_algorithm='cpmu', utility_algorithm='geometric', wage_algorithm = 'marginal_product', share=share,
                       csv = False, plot = False, yaml_dump=False, shock = shock, shock_time = 10000, cm_time=10000, d=0.0,
                       innovation = False, innovation_time = 2000, innovation_algorithm='investment_based', eta = 0.01, weights=None, elasticities=None, sigma=None):
     
@@ -171,7 +171,7 @@ def gulden_vectorised(case, n_countries, n_products, countries, products, citize
 
         # Trade update
         if Tr:
-            tv, net_exports = doAllTrades(tv, S, prices, trade_chage)
+            tv, net_exports = doAllTrades(tv, S, prices, trade_change)
             # net_exports = trades[1]
             S = Q - net_exports
 
@@ -251,8 +251,8 @@ def gulden_vectorised(case, n_countries, n_products, countries, products, citize
         today = datetime.datetime.now()
         folder = today.strftime('%Y%m%d')
         # os.makedirs('plots/{}'.format(folder))
-        # plt.savefig('plots/{}/vectorised_{}.png'.format(folder, case))
-        plt.savefig('plots/vectorised_{}.png'.format(case))
+        plt.savefig('plots/{}/vectorised_{}.png'.format(folder, case))
+        # plt.savefig('plots/vectorised_{}.png'.format(case))
 
         if yaml_dump:
             # Saving parameters
@@ -303,11 +303,12 @@ def gulden_vectorised(case, n_countries, n_products, countries, products, citize
 # print('Vectorised Trade model time taken: {} seconds'.format(t2-t1))
 
 t1 = time.time()
-gulden_vectorised('share_with_Tr=0.5_ir', n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta,
-                  iterations=6000, Tr_time=1000, trade_chage=0.5, autarky_time=15000, pricing_algorithm='dgp', utility_algorithm='geometric',
-                  wage_algorithm='share_of_marginal_product', share=np.array([1,0.5]),
-                  shock = shock, shock_time=10000, cm_time=15000, plot=True, csv=False, yaml_dump=True, d=0.0,
-                  innovation = False, innovation_time = 30000, innovation_algorithm='learning_by_doing', eta = 0.1)
+gulden_vectorised('share_with_Tr', n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta,
+                  iterations=5000, Tr_time=1000, trade_change=0.5,autarky_time=1500000, pricing_algorithm='dgp', utility_algorithm='geometric',
+                  wage_algorithm='share_of_marginal_product', share=np.array([1,0.5]), cm_time=150000, shock_time=100000,
+                  plot=True, csv=False, yaml_dump=True, d=0.05,  innovation_time = 300000,
+                  innovation = False)
+
 t2 = time.time()
 print('Vectorised Trade model time taken: {} seconds'.format(t2-t1))
 
