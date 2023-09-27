@@ -1,8 +1,8 @@
 import numpy as np
 
-def updatePricesAndConsume(prices, D, S ,pricing, utility='geometric'):
+def updatePricesAndConsume(prices, D, S ,pricing, utility, weights, elasticities, sigma):
     consumption_hypothetical = S.copy()
-    UT = utilityFunction(consumption_hypothetical, algorithm=utility)
+    UT = utilityFunction(consumption_hypothetical, weights, elasticities, sigma, algorithm=utility)
     if pricing == 'dgp':
         prices[D>S] = prices[D>S] + prices[D>S]*.02
         prices[D<S] = prices[D<S] - prices[D<S]*.02
@@ -12,12 +12,12 @@ def updatePricesAndConsume(prices, D, S ,pricing, utility='geometric'):
         # UT = utilityFunction(consumption_hypothetical, algorithm=utility)
         mrs = np.ones((S.shape))
         consumption_hypothetical[:,0] += 1
-        marginal_utility_wine= utilityFunction(consumption_hypothetical, algorithm=utility) - UT
+        marginal_utility_wine= utilityFunction(consumption_hypothetical,  weights, elasticities, sigma,algorithm=utility,) - UT
         consumption_hypothetical[:,0] -= 1
 
         for i in range(1, S.shape[1]):
             consumption_hypothetical[:,i] += 1
-            marginal_utility = utilityFunction(consumption_hypothetical, algorithm=utility) - UT
+            marginal_utility = utilityFunction(consumption_hypothetical,  weights, elasticities, sigma,algorithm=utility,) - UT
             consumption_hypothetical[:,i] -= 1
             mrs[:,i] = marginal_utility / marginal_utility_wine
 
@@ -66,12 +66,16 @@ def updatePricesAndConsume(prices, D, S ,pricing, utility='geometric'):
 
 #     
 
-def utilityFunction(consumption, algorithm, weights=None, elasticities=None, sigma=None):
+def utilityFunction(consumption,  weights, elasticities, sigma, algorithm, epsilon=1e-10):
     UT = 1
     if algorithm == 'geometric':
-        for i in range(consumption.shape[1]):
-            UT = UT * consumption[:,i]
-        UT = UT**(1/(consumption.shape[1]))
+        # Ensure all values are positive and not zero
+        adjusted_consumption = consumption + epsilon
+        UT = np.prod(adjusted_consumption, axis=1)**(1/consumption.shape[1])
+
+        # for i in range(consumption.shape[1]):
+        #     UT = UT * consumption[:,i]
+        # UT = UT**(1/(consumption.shape[1]))
 
     if algorithm == 'ces':
         w = weights

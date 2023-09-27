@@ -1,13 +1,35 @@
 # Functions
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-def production_function(A, L, K, alpha, beta):
-    return  A * ((L)**(alpha)) * ((K)**(beta))
+def production_function(A, L, K, alpha, beta,func='C-D'):
+    if func=='C-D':
+        Q = A * ((L)**(alpha)) * ((K)**(beta))
+    elif func=='Leontif':
+        L_prod = np.dot(np.dot(alpha,A), L)
+        K_prod = np.dot(np.dot(alpha,A), L)
+        Q = np.minimum(L_prod, K_prod)
+    return  Q
+
+# alpha = np.array([[0.5,0.5],
+#                   [0.5,0.5]])
+# beta = np.array([[0.5,0.5],
+#                   [0.5,0.5]])
+# A = np.array([[0.5, 2.0],
+#               [0.2, 0.05]])  # Total Factor Productivity
+
+# L = np.array([[50,50],
+#               [50,50]])
+# K = np.array([[50,50],
+#               [50,50]])
+# print(production_function(A, L, K, alpha, beta, func='C-D'))
 
 def wage_function(A, L, K, alpha,beta,p, 
                   p_function=production_function,
                   algorithm='marginal_product',
-                  share=None):
+                  share=0.25):
+    
     if algorithm=='marginal_product':
         inc_labor = L + 1
         inc_production = p_function(A, inc_labor, K, alpha, beta)
@@ -35,3 +57,141 @@ def demand_function(Y, P):
         D[p] = Y / (len(P) * P[p])
 
     return D
+
+
+def plot_gdp(gdp_values, case, country_names=None):
+    """
+    Plots the GDP of the world and the distribution of GDP of individual countries.
+
+    :param gdp_values: A list of GDP values for each country.
+    :param country_names: A list of country names. Defaults to None.
+    """
+    # Total World GDP
+    total_world_gdp = sum(gdp_values)
+    
+    # Plot Total GDP of the World
+    plt.figure(figsize=(10, 5))
+    plt.bar('World', total_world_gdp, color='skyblue')
+    plt.title('Total GDP of the World')
+    plt.ylabel('GDP Value')
+    plt.show()
+
+    # Plot Distribution of GDP of Individual Countries
+    plt.figure(figsize=(15, 8))
+    
+    if country_names:
+        sns.barplot(x=country_names, y=gdp_values, palette="viridis")
+    else:
+        sns.barplot(x=list(range(len(gdp_values))), y=gdp_values, palette="viridis")
+        
+    plt.title('Distribution of GDP of Individual Countries')
+    plt.ylabel('GDP Value')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig('plots/{}_vectorised_gdp.png'.format(case))
+   
+
+def plot_gdp_distribution(case, gdp_values):
+    # Sort GDP values in ascending order
+    sorted_gdp = np.sort(gdp_values)
+    
+    # Create a line plot
+    plt.figure(figsize=(10,6))
+    # plt.plot(sorted_gdp, marker='o', linestyle='-')
+    sns.kdeplot(sorted_gdp, shade=True)
+
+    # Label the axes and the plot
+    plt.xlabel('Country Rank by GDP')
+    plt.ylabel('GDP')
+    plt.title('Distribution of GDP Among Countries')
+    plt.grid(True, which="both", ls="--")
+    plt.savefig('plots/{}_vectorised_gdp_distribution.png'.format(case))
+
+
+def innovate(A,K, Q, method='investment_based', beta_lbd=0.01, eta=0.05, beta_diffusion=0.02):
+    """
+    A function to simulate technological innovation.
+    
+    Parameters:
+    - A: Technology matrix of shape (c, p)
+    - production: Current production matrix of shape (c, p)
+    - method: Method of innovation: 'investment_based', 'learning_by_doing', or 'diffusion'
+    - beta_lbd: Parameter for the learning by doing method
+    - eta: Rate of technology progress if innovation is successful
+    - beta_diffusion: Parameter to control the rate of technological diffusion
+    
+    Returns:
+    - Updated Technology matrix
+    """
+    
+    if method == 'investment_based':
+        
+        global_investment = np.sum(K, axis=1)
+        K_bar = K / global_investment
+        
+        theta_in = 1 - np.exp(-beta_lbd * K_bar)
+        
+        successful_innovation = np.random.rand(*A.shape) < theta_in
+        A[successful_innovation] = A[successful_innovation] * (1 + eta)
+        
+    elif method == 'learning_by_doing':
+        
+        Q_bar = Q / np.max(Q, axis=1)
+        theta_lbd = 1 - np.exp(-beta_lbd * Q_bar)
+        
+        successful_innovation = np.random.rand(*A.shape) < theta_lbd
+        A[successful_innovation] = A[successful_innovation] * (1 + eta)
+    
+    elif method == 'diffusion':
+        global_average_technology = np.mean(A, axis=0)
+        
+        # Those below the global average have a higher chance of innovating
+        tech_below_avg = A < global_average_technology
+        
+        theta_diffusion = 1 - np.exp(-beta_diffusion * tech_below_avg.astype(float))
+        
+        successful_innovation = np.random.rand(*A.shape) < theta_diffusion
+        A[successful_innovation] = A[successful_innovation] * (1 + eta)
+        
+    return A
+
+
+def plot_sorted_production_matrix(case, production_matrix, A_matrix):
+    """
+    Plots the production matrix and A matrix after sorting rows by their sum 
+    and columns by their sum from the production matrix.
+    
+    production_matrix: 2D array-like structure representing the production of each product by each country.
+    A_matrix: 2D array-like structure representing the technological advancement for each product by each country.
+    """
+    
+    # Get the order of rows and columns based on sums of the production matrix
+    row_order = np.argsort(np.sum(production_matrix, axis=1))[::-1]
+    col_order = np.argsort(np.sum(production_matrix, axis=0))[::-1]
+    
+    # Sort the matrices
+    sorted_production = production_matrix[row_order, :]
+    sorted_production = sorted_production[:, col_order]
+    
+    sorted_A = A_matrix[row_order, :]
+    sorted_A = sorted_A[:, col_order]
+    
+    # Plot
+    fig, ax = plt.subplots(1, 2, figsize=(20, 8))
+    
+    sns.heatmap(sorted_production, cmap="YlGnBu", ax=ax[0], cbar_kws={'label': 'Production Value'})
+    ax[0].set_xlabel('Products (sorted by total production)')
+    ax[0].set_ylabel('Countries (sorted by total production)')
+    ax[0].set_title('Sorted Production Matrix')
+    
+    sns.heatmap(sorted_A, cmap="plasma", ax=ax[1], cbar_kws={'label': 'Technology Value'})
+    ax[1].set_xlabel('Products (sorted by total production)')
+    ax[1].set_ylabel('Countries (sorted by total production)')
+    ax[1].set_title('Sorted A Matrix')
+    
+    plt.tight_layout()
+    plt.savefig('plots/{}_vectorised_production.png'.format(case))
+
+
+
+

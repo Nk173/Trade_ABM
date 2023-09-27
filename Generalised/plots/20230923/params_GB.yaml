@@ -1,0 +1,35 @@
+Algorithms:
+  innovation_algorithm: learning_by_doing
+  pricing_algorithm: dgp
+  utility_algorithm: geometric
+  wage_algorithm: marginal_product
+Constants:
+  d: 0.0005
+  eta: 0.1
+Options:
+  Trade:
+  - 500
+  - 2000
+  capital_mobility: 5000
+  innovation_time: 30000
+  iterations: 3000
+  shock: 1000
+  wage_share:
+  - 1
+  - 1
+ProductionFunction:
+  A:
+  - - 1.0
+    - 0.5
+  - - 1.5
+    - 0.2
+  alpha:
+  - - 0.7
+    - 0.4
+  - - 0.7
+    - 0.4
+  beta:
+  - - 0.7
+    - 0.4
+  - - 0.7
+    - 0.4

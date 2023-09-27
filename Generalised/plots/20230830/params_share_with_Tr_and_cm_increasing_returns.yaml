@@ -1,0 +1,91 @@
+Algorithms:
+  innovation_algorithm: learning_by_doing
+  pricing_algorithm: dgp
+  utility_algorithm: geometric
+  wage_algorithm: share_of_marginal_product
+Constants:
+  d: 0.0
+  eta: 0.1
+Options:
+  Trade: 1000
+  capital_mobility: 3000
+  innovation_time: 30000
+  iterations: 5000
+  shock: 10000
+  wage_share: !!python/object/apply:numpy.core.multiarray._reconstruct
+    args:
+    - &id001 !!python/name:numpy.ndarray ''
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 2
+    - &id002 !!python/object/apply:numpy.dtype
+      args:
+      - f8
+      - false
+      - true
+      state: !!python/tuple
+      - 3
+      - <
+      - null
+      - null
+      - null
+      - -1
+      - -1
+      - 0
+    - false
+    - !!binary |
+      AAAAAAAA8D8AAAAAAADgPw==
+ProductionFunction:
+  A: !!python/object/apply:numpy.core.multiarray._reconstruct
+    args:
+    - *id001
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 2
+      - 2
+    - *id002
+    - false
+    - !!binary |
+      AAAAAAAA8D+amZmZmZnpPwAAAAAAAPA/mpmZmZmZ6T8=
+  alpha: !!python/object/apply:numpy.core.multiarray._reconstruct
+    args:
+    - *id001
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 2
+      - 2
+    - *id002
+    - false
+    - !!binary |
+      mpmZmZmZ2T9mZmZmZmbmP5qZmZmZmdk/ZmZmZmZm5j8=
+  beta: !!python/object/apply:numpy.core.multiarray._reconstruct
+    args:
+    - *id001
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 2
+      - 2
+    - *id002
+    - false
+    - !!binary |
+      mpmZmZmZ2T9mZmZmZmbmP5qZmZmZmdk/ZmZmZmZm5j8=
