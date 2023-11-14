@@ -66,7 +66,7 @@ def updatePricesAndConsume(prices, D, S ,pricing, utility, weights, elasticities
 
 #     
 
-def utilityFunction(consumption,  weights, elasticities, sigma, algorithm, epsilon=1e-10):
+def utilityFunction(consumption,  weights, elasticities, sigma, algorithm, epsilon=0):
     UT = 1
     if algorithm == 'geometric':
         # Ensure all values are positive and not zero

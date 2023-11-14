@@ -2,6 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import networkx as nx
 
 def production_function(A, L, K, alpha, beta,func='C-D'):
     if func=='C-D':
@@ -191,6 +192,76 @@ def plot_sorted_production_matrix(case, production_matrix, A_matrix):
     
     plt.tight_layout()
     plt.savefig('plots/{}_vectorised_production.png'.format(case))
+
+
+import networkx as nx
+import matplotlib.pyplot as plt
+
+def visualize_multi_layer_trade_network(trades, n_countries, n_products):
+    # Create a multi-layer network
+    G = nx.MultiGraph()
+
+    # Add nodes for countries
+    for country in range(n_countries):
+        G.add_node(country)
+
+    # Add edges for trade relationships in each product layer
+    for product in range(n_products):
+        for countryA in range(n_countries):
+            for countryB in range(n_countries):
+                # Ensure you are within bounds of available product indices
+                if product < trades.shape[2]:
+                    product_trades = trades[countryA, countryB, product, :]
+                    total_trade = sum(product_trades)
+                    if total_trade > 0:
+                        G.add_edge(countryA, countryB, weight=total_trade, product=product)
+
+    # Draw the multi-layer trade network
+    pos = nx.spring_layout(G, seed=42)
+    edge_colors = [G[u][v][0]['product'] for u, v in G.edges()]
+    widths = [G[u][v][0]['weight']*1e-2 for u, v in G.edges()]
+
+    # Draw nodes and edges
+    nx.draw(G, pos, with_labels=True, node_size=500, node_color='lightblue', font_size=10, font_weight='bold', width=widths, edge_color=edge_colors)
+
+    # # Create an edge_labels dictionary
+    # edge_labels = {}
+    # for u, v, data in G.edges(data=True):
+    #     edge_labels[(u, v, 0)] = f"{data['weight']:.2f}"  # We assume there's only one key for each edge
+
+    # # Add edge labels using edge_labels dictionary
+    # nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=10, font_color='red', rotate=False)
+
+    plt.title("Multi-Layer Trade Network")
+    plt.show()
+
+import numpy as np
+
+def generate_nested_matrix(rows, cols, nestedness_level=1, max_value=2):
+    matrix = np.zeros((rows, cols))
+
+    # Set nestedness_level * min(rows, cols) rows with random values between 0 and max_value in a nested pattern
+    nested_rows = int(nestedness_level * min(rows, cols))
+    for i in range(nested_rows):
+        num_non_zero = min(i + 1, cols)
+        non_zero_elements = np.random.uniform(0, max_value, size=num_non_zero)
+        np.random.shuffle(non_zero_elements)
+        matrix[i, :num_non_zero] = non_zero_elements
+
+    # Ensure no row or column has only zeros
+    for i in range(rows):
+        if np.all(matrix[i, :] == 0):
+            matrix[i, np.random.choice(cols)] = np.random.uniform(0, max_value)
+
+    for j in range(cols):
+        if np.all(matrix[:, j] == 0):
+            matrix[np.random.choice(rows), j] = np.random.uniform(0, max_value)
+
+    return matrix
+
+
+
+
 
 
 

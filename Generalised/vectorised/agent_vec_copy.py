@@ -1,7 +1,8 @@
 import numpy as np
+import pandas as pd
 import random
 import sys, time
-from functions import production_function, wage_function, demand_function, innovate
+from functions import production_function, wage_function, demand_function, innovate, visualize_multi_layer_trade_network
 from tradeutils import doAllTrades
 from pricing import updatePricesAndConsume
 from tqdm import tqdm
@@ -12,11 +13,18 @@ np.random.seed(1)
 case = '2x2'
 iterations = 1000
 n_countries = 2
-countries = ['USA', 'China']
-products = ['wine', 'cloth']
 n_products = 2
+countries = ['USA', 'CHINA']
+products = ['wine', 'cloth']
+
 alpha = np.array([[0.5, 0.5],
                   [0.5, 0.5]])  # output elasticity of labor
+
+alpha1 = np.array([[0.5, 0.7],
+                  [0.5, 0.7]])  # output elasticity of labor
+
+beta1 = np.array([[0.5, 0.7],
+                 [0.5, 0.7]])  # output elasticity of capital
 
 beta = np.array([[0.5, 0.5],
                  [0.5, 0.5]])  # output elasticity of capital
@@ -24,18 +32,19 @@ beta = np.array([[0.5, 0.5],
 A = np.array([[1, 0.8],
               [1, 0.8]])  # Total Factor Productivity
 
+share = np.ones(n_countries)
 shock = np.array([[0.5, 2.0],
                   [0.2, 0.8]])  # Total Factor Productivity
 
 # Number of citizens in each nation
-citizens_per_nation = [500, 500]
+citizens_per_nation = [100,100]
 
 
 def gulden_vectorised(case, n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta,
-                      iterations=2000, Tr_time=500, trade_change=0.5, autarky_time=10000, pricing_algorithm='cpmu',
+                      iterations=2000, Tr_time=500, trade_change=1, autarky_time=10000, pricing_algorithm='cpmu',
                       utility_algorithm='geometric', wage_algorithm='marginal_product',
-                      share=np.array([1, 1]),
-                      csv=False, plot=False, shock=shock, shock_time=10000, cm_time=10000, d=0.0,
+                      share=share,
+                      csv=False, plot=False, shock=shock, shock_time=10000, cm_time=10000, d=0.005,
                       innovation=False, innovation_time=10000, gamma=1, eta=0.01, weights=None, elasticities=None,
                       sigma=None):
     ## Citizen-level
@@ -47,6 +56,9 @@ def gulden_vectorised(case, n_countries, n_products, countries, products, citize
     labor_choices = [np.zeros(citizens, dtype=int) for citizens in citizens_per_nation]
     capital_choices = [np.zeros((citizens, 2), dtype=int) for citizens in citizens_per_nation]
     income = [np.zeros(citizens) for citizens in citizens_per_nation]
+
+    domestic_income = np.zeros((n_countries, n_countries))
+    foreign_income = np.zeros((n_countries, n_countries))
 
     # Allow capital choices to take both industry and nation if capital mobility is enabled
     for nation in range(n_countries):
@@ -62,6 +74,7 @@ def gulden_vectorised(case, n_countries, n_products, countries, products, citize
     W = np.zeros((n_countries, n_products))
     R = np.zeros((n_countries, n_products))
     D = np.zeros((n_countries, n_products))
+    D1 = np.zeros((n_countries, n_products))
     S = np.zeros((n_countries, n_products))
     net_exports = np.zeros(S.shape, dtype=np.float128)
 
@@ -147,9 +160,24 @@ def gulden_vectorised(case, n_countries, n_products, countries, products, citize
                 # Update the capital choices of citizens who decided to change.
                 capital_choices[nation][should_change_capital == 1] = (max_return_industry, nation)
 
-            # Calculate the total income for the nation by summing wages and returns for each citizen.
+            # Calculate the total income for the nation by summing wages and returns for each citizen
             income[nation] = sum(
                 W[nation, labor_choices[nation]] + R[capital_choices[nation][:, 1], capital_choices[nation][:, 0]])
+
+            # Create a mask to identify foreign investments (other nations) for each citizen
+            foreign_investment_nations = capital_choices[nation][:, 1] != nation
+            domestic_investment_nations = capital_choices[nation][:,1] == nation
+
+            # Calculate foreign income based on foreign investments (in the current nation)
+            foreign_investment_indices = capital_choices[nation][:, 0][foreign_investment_nations]
+            foreign_investment_nations = capital_choices[nation][:, 1][foreign_investment_nations]
+
+            domestic_investment_indices = capital_choices[nation][:, 0][domestic_investment_nations]
+            domestic_investment_nations = capital_choices[nation][:, 1][domestic_investment_nations]
+
+            foreign_income[nation, foreign_investment_nations] = np.sum(R[foreign_investment_nations, foreign_investment_indices])
+            domestic_income[nation, domestic_investment_nations] = np.sum(W[nation, labor_choices[nation]]) + np.sum(R[domestic_investment_nations, domestic_investment_indices])
+
 
         for nation in range(n_countries):
             for industry in range(n_products):
@@ -157,10 +185,13 @@ def gulden_vectorised(case, n_countries, n_products, countries, products, citize
 
                 # Initialize labor and demand for the industry.
                 L[nation, industry] = 0
-                D[nation, industry] = income[nation] / (n_products * prices[nation, industry])
+
+                # D[nation, industry] = income[nation] / (n_products * prices[nation, industry])
+                # Demand for nation's goods = domestic demand + foreign demand
+                D1[nation, industry] = (domestic_income[nation,nation]/ (n_products*prices[nation,industry])) + np.sum([foreign_income[otherNation, nation]/ (n_products* prices[nation, industry]) for otherNation in range(n_countries)])
 
                 # Update demand for the industry.
-                demand[nation, industry, t] = D[nation, industry]
+               
 
                 # Update the labor count in the industry.
                 L[nation, industry] = sum(labor_choices[nation] == industry)
@@ -170,8 +201,9 @@ def gulden_vectorised(case, n_countries, n_products, countries, products, citize
                 K[nation, industry] = 0
                 ## let's use a single call for now;  less code duplication matters more than small speed-up for debugging
                 K[nation, industry] = sum(
-                    (capital_choices[c][i, 0] == industry) and (capital_choices[c][i, 1] == nation) for c in
+                    ((capital_choices[c][i, 0] == industry) and (capital_choices[c][i, 1] == nation)) for c in
                     range(n_countries) for i in range(citizens_per_nation[c]))
+                
                 if K[nation, industry] < 1:
                     K[nation, industry] = 1
 
@@ -186,32 +218,33 @@ def gulden_vectorised(case, n_countries, n_products, countries, products, citize
                                                                          algorithm=wage_algorithm, share=share[nation])
                 S[nation, industry] = Q[nation, industry]
 
-                # Store the values in containers for tracking over time.
-                labor[nation, industry, t] = L[nation, industry]
-                capital[nation, industry, t] = K[nation, industry]
-                production[nation, industry, t] = Q[nation, industry]
-                wage[nation, industry, t] = W[nation, industry]
-                returns[nation, industry, t] = R[nation, industry]
-            gnp_vec[nation, t] = sum(Q[nation, :])
+                # # Store the values in containers for tracking over time.
+                # labor[nation, industry, t] = L[nation, industry]
+                # capital[nation, industry, t] = K[nation, industry]
+                # production[nation, industry, t] = Q[nation, industry]
+                # wage[nation, industry, t] = W[nation, industry]
+                # returns[nation, industry, t] = R[nation, industry]
 
         # Trade update
         if Tr:
-            trades, net_exports = doAllTrades(tv, S, prices, trade_change)
-            # net_exports = trades[1]
+            trades, net_exports = doAllTrades(tv, S, prices, trade_change)            
             S = Q - net_exports
         net_exports_history[:, :, t] = net_exports
+        
 
         # Update prices and Consume
-        prices, UT = updatePricesAndConsume(prices, D, S, pricing_algorithm, utility_algorithm, weights=weights,
+        prices, UT = updatePricesAndConsume(prices, D1, S, pricing_algorithm, utility_algorithm, weights=weights,
                                             elasticities=elasticities, sigma=sigma)
         prices_vec[:, :, t] = prices
         utility[:, t] = UT
         gdp_vec[:, t] = income
         supply[:, :, t] = S
-
-        # Innovate
-        if (innovation) and (t >= innovation_time):
-            A = innovate(A, K, gamma, eta)
+        demand[:,:, t] = D1
+        labor[:,:,t] = L
+        capital[:,:,t] = K
+        production[:,:,t] = Q
+        wage[:,:,t] = W
+        returns[:,:,t] = R
 
     # Save the results of Labor, Productions, Wages, and Returns to a csv file
     if csv:
@@ -241,68 +274,78 @@ def gulden_vectorised(case, n_countries, n_products, countries, products, citize
                 ax[0, 0].set_title('Production')
                 # ax[0,0].axvline(x=Tr_time, ls= '--', color='k')
                 # ax[0,0].text(Tr_time, np.max(production), 'Trade', ha='center', va='center',rotation='vertical', backgroundcolor='white')
-                ax[0, 0].axvline(x=shock_time, ls='--', color='k')
+                ax[0, 0].axvline(x=cm_time, ls='--', color='k')
+                ax[0, 0].set_ylim(0,2*max(citizens_per_nation))
 
                 ax[1, 0].plot(range(iterations), prices_vec[nation, industry, :],
                               label='{}-{}'.format(countries[nation], products[industry]))
                 ax[1, 0].set_title('Prices')
                 # ax[1,0].axvline(x=Tr_time, ls= '--', color='k')
                 # ax[1,0].text(Tr_time, np.max(production), 'Trade', ha='center', va='center',rotation='vertical', backgroundcolor='white')
-                ax[1, 0].axvline(x=shock_time, ls='--', color='k')
+                ax[1, 0].axvline(x=cm_time, ls='--', color='k')
+                ax[1, 0].set_ylim(0,2)
 
                 ax[0, 2].plot(range(iterations), demand[nation, industry, :],
                               label='{}-{}'.format(countries[nation], products[industry]))
                 ax[0, 2].set_title('Demand')
                 # ax[0,2].axvline(x=Tr_time, ls= '--', color='k' )
-                ax[0, 2].axvline(x=shock_time, ls='--', color='k')
+                ax[0, 2].axvline(x=cm_time, ls='--', color='k')
+                ax[0, 2].set_ylim(0,max(citizens_per_nation))
 
                 ax[1, 2].plot(range(iterations), supply[nation, industry, :],
                               label='{}-{}'.format(countries[nation], products[industry]))
                 ax[1, 2].set_title('Supply')
                 # ax[1,2].axvline(x=Tr_time, ls= '--', color='k' )
-                ax[1, 2].axvline(x=shock_time, ls='--', color='k')
+                ax[1, 2].axvline(x=cm_time, ls='--', color='k')
+                ax[1, 2].set_ylim(0,max(citizens_per_nation))
 
                 ax[0, 3].plot(range(iterations), labor[nation, industry, :],
                               label='{}-{}'.format(countries[nation], products[industry]))
                 ax[0, 3].set_title('Labor')
                 # ax[0,3].axvline(x=Tr_time, ls= '--', color='k' )
-                ax[0, 3].axvline(x=shock_time, ls='--', color='k')
+                ax[0, 3].axvline(x=cm_time, ls='--', color='k')
+                ax[0, 3].set_ylim(0,max(citizens_per_nation))
 
                 ax[1, 3].plot(range(iterations), capital[nation, industry, :],
                               label='{}-{}'.format(countries[nation], products[industry]))
                 ax[1, 3].set_title('Capital')
                 # ax[1,3].axvline(x=Tr_time, ls= '--', color='k' )
-                ax[1, 3].axvline(x=shock_time, ls='--', color='k')
+                ax[1, 3].axvline(x=cm_time, ls='--', color='k')
+                ax[1, 3].set_ylim(0,max(citizens_per_nation))
 
                 ax[0, 4].plot(range(iterations), wage[nation, industry, :],
                               label='{}-{}'.format(countries[nation], products[industry]))
                 ax[0, 4].set_title('Wages')
                 # ax[0,4].axvline(x=Tr_time, ls= '--', color='k' )
-                ax[0, 4].axvline(x=shock_time, ls='--', color='k')
+                ax[0, 4].axvline(x=cm_time, ls='--', color='k')
+                ax[0, 4].set_ylim(0,1)
 
                 ax[1, 4].plot(range(iterations), returns[nation, industry, :],
                               label='{}-{}'.format(countries[nation], products[industry]))
                 ax[1, 4].set_title('Returns')
                 # ax[1,4].axvline(x=Tr_time, ls= '--', color='k' )
-                ax[1, 4].axvline(x=shock_time, ls='--', color='k')
+                ax[1, 4].axvline(x=cm_time, ls='--', color='k')
+                ax[1, 4].set_ylim(0,1)
 
             ax[0, 1].plot(range(iterations), gdp_vec[nation, :],
                           label='{}-{}'.format(countries[nation], products[industry]))
             ax[0, 1].set_title('GDP')
             # ax[0,1].axvline(x=Tr_time, ls= '--', color='k' )
-            ax[0, 1].axvline(x=shock_time, ls='--', color='k')
+            ax[0, 1].axvline(x=cm_time, ls='--', color='k')
+            ax[0, 1].set_ylim(0,max(citizens_per_nation)+50)
 
             ax[1, 1].plot(range(iterations), utility[nation, :],
                           label='{}-{}'.format(countries[nation], products[industry]))
             ax[1, 1].set_title('Utility')
             # ax[1,1].axvline(x=Tr_time, ls= '--', color='k' )
-            ax[1, 1].axvline(x=shock_time, ls='--', color='k')
+            ax[1, 1].axvline(x=cm_time, ls='--', color='k')
+            ax[1, 1].set_ylim(0,max(citizens_per_nation))
 
         handles, labels = ax[0, 0].get_legend_handles_labels()
         fig.legend(handles, labels, loc='lower center', ncol=n_countries, fontsize=15)
-        plt.savefig('plots/vectorised_{}.png'.format(case))
+        plt.savefig('vectorised_{}.png'.format(case))
 
-    return net_exports, income, production
+    return net_exports, income, production, trades
 
 
 # # model run
@@ -315,11 +358,49 @@ def gulden_vectorised(case, n_countries, n_products, countries, products, citize
 # print('Vectorised Trade model time taken: {} seconds'.format(t2-t1))
 
 t1 = time.time()
-gulden_vectorised('share_product2', n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta,
-                  iterations=10000, Tr_time=5000, autarky_time=15000, pricing_algorithm='dgp',
-                  utility_algorithm='geometric',
+# net_exports, income, production, trades = gulden_vectorised('product_cm_cpmu', n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta,
+#                   iterations=10000, Tr_time=2000, autarky_time=15000, pricing_algorithm='cpmu',
+#                   utility_algorithm='geometric',
+#                   wage_algorithm='share_of_marginal_product', share=np.array([1, 1]),
+#                   shock=shock, shock_time=10000, cm_time=5000, plot=True, csv=False, d=0.0)
+
+# print(trades)
+# gulden_vectorised('product_cm_dgp', n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta,
+#                   iterations=10000, Tr_time=2000, autarky_time=15000, pricing_algorithm='dgp',
+#                   utility_algorithm='geometric',
+#                   wage_algorithm='share_of_marginal_product', share=np.array([1, 1]),
+#                   shock=shock, shock_time=10000, cm_time=5000, plot=True, csv=False, d=0.0)
+
+gulden_vectorised('share_product_cm_dgp_IR', n_countries, n_products, countries, products, citizens_per_nation, A, alpha1, beta1,
+                  iterations=10000, Tr_time=2000, autarky_time=15000, pricing_algorithm='dgp',
+                  utility_algorithm='geometric', trade_change=1,
+                  wage_algorithm='share_of_marginal_product', share=np.array([1, 0.5]),
+                  shock=shock, shock_time=15000, cm_time=5000, plot=True, csv=False, d=0.00)
+
+gulden_vectorised('share_product_cm_dgp_0.8_IR', n_countries, n_products, countries, products, citizens_per_nation, A, alpha1, beta1,
+                  iterations=10000, Tr_time=2000, autarky_time=15000, pricing_algorithm='dgp',
+                  utility_algorithm='geometric', trade_change=1,
+                  wage_algorithm='share_of_marginal_product', share=np.array([1, 0.8]),
+                  shock=shock, shock_time=15000, cm_time=5000, plot=True, csv=False, d=0.00)
+
+gulden_vectorised('share_product_cm_dgp_1_IR', n_countries, n_products, countries, products, citizens_per_nation, A, alpha1, beta1,
+                  iterations=10000, Tr_time=2000, autarky_time=15000, pricing_algorithm='dgp',
+                  utility_algorithm='geometric', trade_change=1,
                   wage_algorithm='share_of_marginal_product', share=np.array([1, 1]),
-                  shock=shock, shock_time=10000, cm_time=10000, plot=True, csv=False, d=0.0)
+                  shock=shock, shock_time=15000, cm_time=5000, plot=True, csv=False, d=0.00)
+
+# gulden_vectorised('share_product_cm_IR_dgp', n_countries, n_products, countries, products, citizens_per_nation, A, alpha1, beta1,
+#                   iterations=10000, Tr_time=2000, autarky_time=15000, pricing_algorithm='dgp',
+#                   utility_algorithm='geometric',
+#                   wage_algorithm='share_of_marginal_product', share=np.array([1, 0.5]),
+#                   shock=shock, shock_time=10000, cm_time=5000, plot=True, csv=False, d=0.0)
+
+# gulden_vectorised('share_product_cm_IR_cpmu', n_countries, n_products, countries, products, citizens_per_nation, A, alpha1, beta1,
+#                   iterations=10000, Tr_time=2000, autarky_time=15000, pricing_algorithm='cpmu',
+#                   utility_algorithm='geometric',
+#                   wage_algorithm='share_of_marginal_product', share=np.array([1, 0.5]),
+#                   shock=shock, shock_time=10000, cm_time=5000, plot=True, csv=False, d=0.0)
+
 t2 = time.time()
 print('Vectorised Trade model time taken: {} seconds'.format(t2 - t1))
 
