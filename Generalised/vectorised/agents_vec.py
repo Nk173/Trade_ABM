@@ -11,7 +11,7 @@ from tqdm import tqdm
 np.random.seed(1)
 
 # Constants
-case = '3x3'
+case = '5x5'
 iterations = 1000
 n_countries = 5
 n_products = 5
@@ -419,7 +419,7 @@ t1 = time.time()
 # print(np.sum(net_exports_history, axis=2), ' ', net_exports_history[:,:,-1])
 
 
-production, income, trades_df = gulden_vectorised('b3x3_1', n_countries, n_products, countries, products, citizens_per_nation, A, alpha_test, beta_test,
+production, income, trades_df = gulden_vectorised('b5x5_1', n_countries, n_products, countries, products, citizens_per_nation, A, alpha_test, beta_test,
                                                      iterations=10, Tr_time=1, autarky_time=15000, pricing_algorithm='dgp',
                                                      utility_algorithm='geometric',
                                                      wage_algorithm='marginal_product',
