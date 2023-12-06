@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import networkx as nx
+import pandas as pd
 
 def production_function(A, L, K, alpha, beta,func='C-D'):
     if func=='C-D':
@@ -259,6 +260,33 @@ def generate_nested_matrix(rows, cols, nestedness_level=1, max_value=2):
 
     return matrix
 
+
+def array_to_dataframe(array_3d, index_labels):
+    """
+    Converts a 3-D array to a DataFrame with the first two indices of the array forming a MultiIndex.
+
+    :param array_3d: 3-D numpy array to be converted.
+    :param index_labels: Tuple of lists containing labels for the first and second indices respectively.
+    :return: DataFrame with MultiIndex created from the first two dimensions of array_3d.
+    """
+    # Validate the dimensions of the array and the length of index labels
+    if array_3d.ndim != 3 or any(len(labels) != array_3d.shape[i] for i, labels in enumerate(index_labels)):
+        raise ValueError("Dimensions of the array and index labels must match.")
+
+    # Generate MultiIndex
+    index_tuples = [(level1, level2) for level1 in index_labels[0] for level2 in index_labels[1]]
+    multi_index = pd.MultiIndex.from_tuples(index_tuples, names=['country', 'country'])
+
+    # Flatten the 3-D array to 2-D
+    reshaped_array = array_3d.reshape(-1, array_3d.shape[2])
+
+    # Create DataFrame
+    df = pd.DataFrame(reshaped_array, index=multi_index)
+
+    # stack, unstack to transpose
+    df = df.stack().unstack(level=1)
+
+    return df
 
 
 

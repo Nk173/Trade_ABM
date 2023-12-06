@@ -12,32 +12,39 @@ np.random.seed(1)
 # Constants
 case = '2x2'
 iterations = 1000
-n_countries = 2
-n_products = 2
-countries = ['USA', 'CHINA']
-products = ['wine', 'cloth']
+n_countries = 3
+n_products = 3
+countries = ['USA', 'CHINA', 'MEX']
+products = ['wine', 'cloth', 'maize']
 
 alpha = np.array([[0.5, 0.5],
                   [0.5, 0.5]])  # output elasticity of labor
 
-alpha1 = np.array([[0.5, 0.7],
-                  [0.5, 0.7]])  # output elasticity of labor
+# alpha1 = np.array([[0.5, 0.5],
+#                   [0.5, 0.5]])  # output elasticity of labor
 
-beta1 = np.array([[0.5, 0.7],
-                 [0.5, 0.7]])  # output elasticity of capital
+alpha1 = np.array([[0.5, 0.5,0.5],
+                   [0.5, 0.5,0.5],
+                   [0.5, 0.5,0.5]])  # output elasticity of capital
 
-beta = np.array([[0.5, 0.5],
-                 [0.5, 0.5]])  # output elasticity of capital
+beta1 = np.array([[0.5, 0.5, 0.5],
+                  [0.5, 0.5, 0.5],
+                  [0.5, 0.5, 0.5]])  # output elasticity of capital
 
-A = np.array([[1, 0.8],
-              [1, 0.8]])  # Total Factor Productivity
+# beta = np.array([[0.5, 0.5,0.5],
+#                  [0.5, 0.5,0.5],
+#                  [0.5,0.5,0.5]])  # output elasticity of capital
+
+A = np.array([[1, 1.6, 0.5],
+              [1, 0.8, 1.0],
+              [1, 0.8, 1,0]], dtype=object)  # Total Factor Productivity
 
 share = np.ones(n_countries)
 shock = np.array([[0.5, 2.0],
                   [0.2, 0.8]])  # Total Factor Productivity
 
 # Number of citizens in each nation
-citizens_per_nation = [100,100]
+citizens_per_nation = [1000,100,100]
 
 
 def gulden_vectorised(case, n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta,
@@ -371,22 +378,22 @@ t1 = time.time()
 #                   wage_algorithm='share_of_marginal_product', share=np.array([1, 1]),
 #                   shock=shock, shock_time=10000, cm_time=5000, plot=True, csv=False, d=0.0)
 
-gulden_vectorised('share_product_cm_dgp_IR', n_countries, n_products, countries, products, citizens_per_nation, A, alpha1, beta1,
-                  iterations=10000, Tr_time=2000, autarky_time=15000, pricing_algorithm='dgp',
-                  utility_algorithm='geometric', trade_change=1,
-                  wage_algorithm='share_of_marginal_product', share=np.array([1, 0.5]),
-                  shock=shock, shock_time=15000, cm_time=5000, plot=True, csv=False, d=0.00)
+# gulden_vectorised('share_product_cm_dgp_IR', n_countries, n_products, countries, products, citizens_per_nation, A, alpha1, beta1,
+#                   iterations=10000, Tr_time=2000, autarky_time=15000, pricing_algorithm='dgp',
+#                   utility_algorithm='geometric', trade_change=1,
+#                   wage_algorithm='share_of_marginal_product', share=np.array([1, 0.5]),
+#                   shock=shock, shock_time=15000, cm_time=5000, plot=True, csv=False, d=0.00)
 
-gulden_vectorised('share_product_cm_dgp_0.8_IR', n_countries, n_products, countries, products, citizens_per_nation, A, alpha1, beta1,
-                  iterations=10000, Tr_time=2000, autarky_time=15000, pricing_algorithm='dgp',
-                  utility_algorithm='geometric', trade_change=1,
-                  wage_algorithm='share_of_marginal_product', share=np.array([1, 0.8]),
-                  shock=shock, shock_time=15000, cm_time=5000, plot=True, csv=False, d=0.00)
+# gulden_vectorised('share_product_cm_dgp_0.8_IR', n_countries, n_products, countries, products, citizens_per_nation, A, alpha1, beta1,
+#                   iterations=10000, Tr_time=2000, autarky_time=15000, pricing_algorithm='dgp',
+#                   utility_algorithm='geometric', trade_change=1,
+#                   wage_algorithm='share_of_marginal_product', share=np.array([1, 0.8]),
+#                   shock=shock, shock_time=15000, cm_time=5000, plot=True, csv=False, d=0.00)
 
-gulden_vectorised('share_product_cm_dgp_1_IR', n_countries, n_products, countries, products, citizens_per_nation, A, alpha1, beta1,
+gulden_vectorised('3x3', n_countries, n_products, countries, products, citizens_per_nation, A, alpha1, beta1,
                   iterations=10000, Tr_time=2000, autarky_time=15000, pricing_algorithm='dgp',
                   utility_algorithm='geometric', trade_change=1,
-                  wage_algorithm='share_of_marginal_product', share=np.array([1, 1]),
+                  wage_algorithm='share_of_marginal_product', share=np.array([1, 1, 1]),
                   shock=shock, shock_time=15000, cm_time=5000, plot=True, csv=False, d=0.00)
 
 # gulden_vectorised('share_product_cm_IR_dgp', n_countries, n_products, countries, products, citizens_per_nation, A, alpha1, beta1,
