@@ -1,0 +1,12 @@
+#PBS -l select=1:ncpus=10:mem=32Gb
+#PBS -l walltime=72:0:0
+#PBS -J 1-10
+
+
+# Load modules for any applications
+
+module load anaconda3/personal
+source activate networks
+conda activate networks
+
+python /rds/general/user/nk821/home/anaconda3/CCS/ABM/Gulden/vectorised_tests/opt_test.py $PBS_ARRAY_INDEX
