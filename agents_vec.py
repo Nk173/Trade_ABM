@@ -4,7 +4,7 @@ import pickle
 import random
 import sys, time
 from functions import production_function, regularise, wage_function, demand_function, innovate, generate_nested_matrix, visualize_multi_layer_trade_network, array_to_dataframe
-from tradeutils import doAllTrades
+from tradeutils_adaptive import doAllTrades
 from pricing import updatePricesAndConsume
 from tqdm import tqdm
 
@@ -29,7 +29,7 @@ def convert_to_matrices(params, n_countries, n_products, default_value=0):
 # Example usage with the same params and assuming the missing keys
 # alpha, beta, A = convert_to_matrices(params, n_countries, n_products)
 
-def gulden_vectorised(case, seed, n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta, share, tariffs, psi, iterations=2000, Tr_time=1, tariff_time=1, trade_change=1, autarky_time=10000,pricing_algorithm='dgp', utility_algorithm='geometric', prod_function='C-D', wage_algorithm='marginal_product', csv=False, plot=False, plot_simple=False, shock=None, shock_time=10000,  cm_time=10000, d=0.000, p_reassess=None, innovation=False, innovation_time=10000, gamma=1, eta=0.01,weights=None, elasticities=None, sigma=None, cnames=None, pnames=None):
+def gulden_vectorised(case, seed, n_countries, n_products, countries, products, citizens_per_nation, A, alpha, beta, share, tariffs, psi, iterations=2000, Tr_time=1, tariff_time=1, trade_change=1, autarky_time=10000,pricing_algorithm='dgp', utility_algorithm='geometric', prod_function='C-D', wage_algorithm='marginal_product', csv=False, plot=False, plot_simple=False, plot_anim=False,shock=None, shock_time=10000,  cm_time=10000, d=0.000, p_reassess=None, innovation=False, innovation_time=10000, gamma=1, eta=0.01,weights=None, elasticities=None, sigma=None, cnames=None, pnames=None):
     
     np.random.seed(seed=seed)
 
@@ -115,6 +115,8 @@ def gulden_vectorised(case, seed, n_countries, n_products, countries, products, 
             
         if t>=tariff_time:
             tariffs=tariffs_rates
+        # else:
+            # tariffs=tariffs
 
         if t >= autarky_time:
             if (T1 > 0 and t < T1):
@@ -442,6 +444,91 @@ def gulden_vectorised(case, seed, n_countries, n_products, countries, products, 
         fig1.savefig(f'{case}_gdp_simple.png')
 
     # Plot the results
+    if plot_anim:
+        import matplotlib.pyplot as plt
+        import matplotlib.animation as animation
+
+        fig, ax = plt.subplots(2, 4, figsize=(20, 10))
+        fig2, ax2 = plt.subplots(1, 2, figsize=(10, 5))
+        plt.rcParams['axes.labelsize'] = 14
+        plt.rcParams['axes.titlesize'] = 16
+
+        variables = {
+            'Production': production,
+            'Demand': demand,
+            'Labor': labor,
+            'Wages': wage,
+            'Prices': prices_vec,
+            'Supply': supply,
+            'Capital': capital,
+            'Returns': returns
+        }
+
+        lines = {name: [] for name in variables}
+        x = list(range(iterations))
+        highlight_combinations = [(4, 1), (0, 1), (3, 1)]
+        highlight_countries = [0, 3, 4]
+
+        for i, (varname, var) in enumerate(variables.items()):
+            row, col = divmod(i, 4)
+            ax[row, col].set_title(varname)
+            ax[row, col].set_xlim(0, iterations)
+            ax[row, col].set_ylim(0, np.max(var) * 1.1)
+
+            for n in range(n_countries):
+                for p in range(n_products):
+                    label = f'{cnames[n]}-{pnames[p]}'
+                    alpha = 1.0 if (n, p) in highlight_combinations else 0.3
+                    (line,) = ax[row, col].plot([], [], label=label if alpha == 1.0 else None,
+                                                color=f"C{n}", alpha=alpha)
+                    lines[varname].append((line, n, p))
+
+        lines_gdp = []
+        lines_util = []
+
+        for n in range(n_countries):
+            alpha = 1.0 if n in highlight_countries else 0.3
+            (gdp_line,) = ax2[0].plot([], [], label=cnames[n], color=f"C{n}", alpha=alpha)
+            (util_line,) = ax2[1].plot([], [], label=cnames[n], color=f"C{n}", alpha=alpha)
+            lines_gdp.append((gdp_line, n))
+            lines_util.append((util_line, n))
+
+        ax2[0].set_title("GDP per Capita")
+        ax2[0].set_xlim(0, iterations)
+        ax2[0].set_ylim(0, np.max(gdp_vec / np.array(citizens_per_nation)[:, None]) * 1.1)
+        ax2[1].set_title("Utility")
+        ax2[1].set_xlim(0, iterations)
+        ax2[1].set_ylim(0, np.max(utility) * 1.1)
+
+        def init():
+            for varlines in lines.values():
+                for line, _, _ in varlines:
+                    line.set_data([], [])
+            for line, _ in lines_gdp + lines_util:
+                line.set_data([], [])
+            return sum([list(map(lambda x: x[0], l)) for l in lines.values()], []) + \
+                [l[0] for l in lines_gdp + lines_util]
+
+        def update(frame):
+            for varname, varlines in lines.items():
+                var = variables[varname]
+                for line, n, p in varlines:
+                    line.set_data(x[:frame], var[n, p, :frame])
+
+            for line, n in lines_gdp:
+                line.set_data(x[:frame], gdp_vec[n, :frame] / citizens_per_nation[n])
+            for line, n in lines_util:
+                line.set_data(x[:frame], utility[n, :frame])
+
+            return sum([list(map(lambda x: x[0], l)) for l in lines.values()], []) + \
+                [l[0] for l in lines_gdp + lines_util]
+
+        ani = animation.FuncAnimation(fig, update, init_func=init,
+                                    frames=iterations, interval=50, blit=False)
+
+        ani.save(f"{case}_full_animation.mp4", writer='ffmpeg', dpi=150)
+        print(f"Saved animation to {case}_full_animation.mp4")
+
     if plot:
         import matplotlib.pyplot as plt
         variables = ['production', 'demand', 'traded', 'labor', 'capital', 'wages', 'prices', 'ROI', 'MRS']
