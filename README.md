@@ -151,7 +151,7 @@ If you use this code, please cite the forthcoming working paper:
   author       = {Kumar, Nishanth and Vu, Tuong and Carrella, Ernesto and Guerrero, Omar and Dobrantu, Cosmina},
   year         = {2025},
   note         = {(forthcoming)},
-  url          = {https://github.com/Nk173/Gulden_2013}
+  url          = {https://github.com/Nk173/Trade_ABM}
 }
 ```
 
