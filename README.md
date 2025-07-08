@@ -41,7 +41,7 @@ We begin with N countries, M sectors, and the size of each country's labour forc
 
 ## 1️⃣ Model Description
 
-> *A high‑level schematic and key equations.*
+> *A high‑level schematic.*
 
 <div align="center">
   <img src="assets/model_schematic.png" width="650" alt="Model schematic" />
