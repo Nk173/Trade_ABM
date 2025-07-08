@@ -6,18 +6,18 @@ This repository contains the codebase and simulation outputs for a modular, scal
 
 ---
 
-## 📌 Features
+## Features
 
-* 🧠 Agent‑based modelling of labour, capital, and consumption decisions
-* 🏭 Multi‑country × multi‑sector generalisation (n countries × m sectors)
-* 💸 Capital‑mobility switch, endogenous prices, heterogeneous utility rules
-* 📦 Plug‑and‑play production / wage / demand functions
-* 🌍 Bilateral tariffs & productivity shocks
-* 🔧 Empirical calibration with MRIO trade data (USA, China, Mexico)
+* Agent‑based modelling of labour, capital, and consumption decisions
+* Multi‑country × multi‑sector generalisation (n countries × m sectors)
+* Capital‑mobility switch, endogenous prices, heterogeneous utility rules
+* Plug‑and‑play production / wage / demand functions
+* Bilateral tariffs & productivity shocks
+* Empirical calibration with MRIO trade data (USA, China, Mexico)
 
 ---
 
-## 🧮 Model Overview
+## Model Overview
 
 We begin with N countries, M sectors, and the size of each country's labour force. Agents (labourers) in each country choose employment and investment sectors based on marginal returns, reassessing with probability `p_reassess`. Aggregated choices feed into country‑level production, trade, and consumption.
 
@@ -39,7 +39,7 @@ We begin with N countries, M sectors, and the size of each country's labour forc
 
 ---
 
-## 1️⃣ Model Description
+## 1 Model Description
 
 > *A high‑level schematic.*
 
@@ -51,7 +51,7 @@ We begin with N countries, M sectors, and the size of each country's labour forc
 
 ---
 
-## 2️⃣ Theoretical Example — Samuelson Outsourcing
+## 2️ Theoretical Example — Samuelson Outsourcing
 
 > *Replicates Samuelson’s (2004) two‑country outsourcing paradox.*
 
@@ -68,7 +68,7 @@ We begin with N countries, M sectors, and the size of each country's labour forc
 
 ---
 
-## 3️⃣ Calibration Strategy
+## 3️ Calibration Strategy
 
 > *Empirically matching 2019 MRIO trade flows for USA, China, and Mexico.*
 
@@ -103,7 +103,7 @@ We begin with N countries, M sectors, and the size of each country's labour forc
 
 ---
 
-## 🧪 Quick Start
+## Quick Start
 
 > 📄 Kumar, N., Vu, T., Carrella, E., Guerrero, O., & Dobrantu, C. (forthcoming). *A Generalised Agent‑Based Model for Modelling International Trade.* Alan Turing Institute Working Paper.
 
@@ -133,7 +133,7 @@ The notebook walks through:
 
 ---
 
-## ✨ Coming Next
+## Future work
 
 * Firm‑level heterogeneity (Melitz extension)
 * Endogenous innovation and skill accumulation
@@ -141,7 +141,7 @@ The notebook walks through:
 
 ---
 
-## ✍️ Citation
+## Citation
 
 If you use this code, please cite the forthcoming working paper:
 
